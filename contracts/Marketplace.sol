@@ -1,99 +1,85 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-
-
-/*
- * @dev Provides information about the current execution context, including the
- * sender of the transaction and its data. While these are generally available
- * via msg.sender and msg.data, they should not be accessed in such a direct
- * manner, since when dealing with meta-transactions the account sending and
- * paying for execution may not be the actual sender (as far as an application
- * is concerned).
- *
- * This contract is only required for intermediate, library-like contracts.
- */
-abstract contract Context {
-    function _msgSender() internal view virtual returns (address) {
-        return msg.sender;
-    }
-
-    function _msgData() internal view virtual returns (bytes calldata) {
-        return msg.data;
-    }
-}
-
 /**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
+ * @dev Interface of the ERC20 standard as defined in the EIP.
  */
-abstract contract Ownable is Context {
-    address private _owner;
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
+interface IERC20 {
     /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor() {
-        _setOwner(_msgSender());
-    }
-
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function owner() public view virtual returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
      *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
+     * Note that `value` may be zero.
      */
-    function renounceOwnership() public virtual onlyOwner {
-        _setOwner(address(0));
-    }
+    event Transfer(address indexed from, address indexed to, uint256 value);
 
     /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
+     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
+     * a call to {approve}. `value` is the new allowance.
      */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(
-            newOwner != address(0),
-            "Ownable: new owner is the zero address"
-        );
-        _setOwner(newOwner);
-    }
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 
-    function _setOwner(address newOwner) private {
-        address oldOwner = _owner;
-        _owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
-    }
+    /**
+     * @dev Returns the amount of tokens in existence.
+     */
+    function totalSupply() external view returns (uint256);
+
+    /**
+     * @dev Returns the amount of tokens owned by `account`.
+     */
+    function balanceOf(address account) external view returns (uint256);
+
+    /**
+     * @dev Moves `amount` tokens from the caller's account to `to`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transfer(address to, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Returns the remaining number of tokens that `spender` will be
+     * allowed to spend on behalf of `owner` through {transferFrom}. This is
+     * zero by default.
+     *
+     * This value changes when {approve} or {transferFrom} are called.
+     */
+    function allowance(address owner, address spender) external view returns (uint256);
+
+    /**
+     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * that someone may use both the old and the new allowance by unfortunate
+     * transaction ordering. One possible solution to mitigate this race
+     * condition is to first reduce the spender's allowance to 0 and set the
+     * desired value afterwards:
+     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+     *
+     * Emits an {Approval} event.
+     */
+    function approve(address spender, uint256 amount) external returns (bool);
+
+    /**
+     * @dev Moves `amount` tokens from `from` to `to` using the
+     * allowance mechanism. `amount` is then deducted from the caller's
+     * allowance.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a {Transfer} event.
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
 }
+
+
 /**
  * @dev Contract module that helps prevent reentrant calls to a function.
  *
@@ -135,7 +121,7 @@ abstract contract ReentrancyGuard {
      * @dev Prevents a contract from calling itself, directly or indirectly.
      * Calling a `nonReentrant` function from another `nonReentrant`
      * function is not supported. It is possible to prevent this from happening
-     * by making the `nonReentrant` function external, and make it call a
+     * by making the `nonReentrant` function external, and making it call a
      * `private` function that does the actual work.
      */
     modifier nonReentrant() {
@@ -154,431 +140,198 @@ abstract contract ReentrancyGuard {
 }
 
 /**
- * @dev Library for managing
- * https://en.wikipedia.org/wiki/Set_(abstract_data_type)[sets] of primitive
- * types.
+ * @title Counters
+ * @author Matt Condon (@shrugs)
+ * @dev Provides counters that can only be incremented, decremented or reset. This can be used e.g. to track the number
+ * of elements in a mapping, issuing ERC721 ids, or counting request ids.
  *
- * Sets have the following properties:
- *
- * - Elements are added, removed, and checked for existence in constant time
- * (O(1)).
- * - Elements are enumerated in O(n). No guarantees are made on the ordering.
- *
- * ```
- * contract Example {
- *     // Add the library methods
- *     using EnumerableSet for EnumerableSet.AddressSet;
- *
- *     // Declare a set state variable
- *     EnumerableSet.AddressSet private mySet;
- * }
- * ```
- *
- * As of v3.3.0, sets of type `bytes32` (`Bytes32Set`), `address` (`AddressSet`)
- * and `uint256` (`UintSet`) are supported.
+ * Include with `using Counters for Counters.Counter;`
  */
-library EnumerableSet {
-    // To implement this library for multiple types with as little code
-    // repetition as possible, we write it in terms of a generic Set type with
-    // bytes32 values.
-    // The Set implementation uses private functions, and user-facing
-    // implementations (such as AddressSet) are just wrappers around the
-    // underlying Set.
-    // This means that we can only create new EnumerableSets for types that fit
-    // in bytes32.
-
-    struct Set {
-        // Storage of set values
-        bytes32[] _values;
-        // Position of the value in the `values` array, plus 1 because index 0
-        // means a value is not in the set.
-        mapping(bytes32 => uint256) _indexes;
+library Counters {
+    struct Counter {
+        // This variable should never be directly accessed by users of the library: interactions must be restricted to
+        // the library's function. As of Solidity v0.5.2, this cannot be enforced, though there is a proposal to add
+        // this feature: see https://github.com/ethereum/solidity/issues/4637
+        uint256 _value; // default: 0
     }
 
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function _add(Set storage set, bytes32 value) private returns (bool) {
-        if (!_contains(set, value)) {
-            set._values.push(value);
-            // The value is stored at length-1, but we add 1 to all indexes
-            // and use 0 as a sentinel value
-            set._indexes[value] = set._values.length;
-            return true;
-        } else {
-            return false;
+    function current(Counter storage counter) internal view returns (uint256) {
+        return counter._value;
+    }
+
+    function increment(Counter storage counter) internal {
+        unchecked {
+            counter._value += 1;
         }
     }
 
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function _remove(Set storage set, bytes32 value) private returns (bool) {
-        // We read and store the value's index to prevent multiple reads from the same storage slot
-        uint256 valueIndex = set._indexes[value];
-
-        if (valueIndex != 0) {
-            // Equivalent to contains(set, value)
-            // To delete an element from the _values array in O(1), we swap the element to delete with the last one in
-            // the array, and then remove the last element (sometimes called as 'swap and pop').
-            // This modifies the order of the array, as noted in {at}.
-
-            uint256 toDeleteIndex = valueIndex - 1;
-            uint256 lastIndex = set._values.length - 1;
-
-            if (lastIndex != toDeleteIndex) {
-                bytes32 lastvalue = set._values[lastIndex];
-
-                // Move the last value to the index where the value to delete is
-                set._values[toDeleteIndex] = lastvalue;
-                // Update the index for the moved value
-                set._indexes[lastvalue] = valueIndex; // Replace lastvalue's index to valueIndex
-            }
-
-            // Delete the slot where the moved value was stored
-            set._values.pop();
-
-            // Delete the index for the deleted slot
-            delete set._indexes[value];
-
-            return true;
-        } else {
-            return false;
+    function decrement(Counter storage counter) internal {
+        uint256 value = counter._value;
+        require(value > 0, "Counter: decrement overflow");
+        unchecked {
+            counter._value = value - 1;
         }
     }
 
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function _contains(Set storage set, bytes32 value)
-        private
-        view
-        returns (bool)
-    {
-        return set._indexes[value] != 0;
+    function reset(Counter storage counter) internal {
+        counter._value = 0;
     }
+}
 
-    /**
-     * @dev Returns the number of values on the set. O(1).
-     */
-    function _length(Set storage set) private view returns (uint256) {
-        return set._values.length;
-    }
+/**
+ * @dev String operations.
+ */
+library Strings {
+    bytes16 private constant _HEX_SYMBOLS = "0123456789abcdef";
 
     /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
+     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
      */
-    function _at(Set storage set, uint256 index)
-        private
-        view
-        returns (bytes32)
-    {
-        return set._values[index];
-    }
+    function toString(uint256 value) internal pure returns (string memory) {
+        // Inspired by OraclizeAPI's implementation - MIT licence
+        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
 
-    // Bytes32Set
-
-    struct Bytes32Set {
-        Set _inner;
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
     }
 
     /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
+     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.
      */
-    function add(Bytes32Set storage set, bytes32 value)
-        internal
-        returns (bool)
-    {
-        return _add(set._inner, value);
+    function toHexString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) {
+            return "0x00";
+        }
+        uint256 temp = value;
+        uint256 length = 0;
+        while (temp != 0) {
+            length++;
+            temp >>= 8;
+        }
+        return toHexString(value, length);
     }
 
     /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
+     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
      */
-    function remove(Bytes32Set storage set, bytes32 value)
-        internal
-        returns (bool)
-    {
-        return _remove(set._inner, value);
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(Bytes32Set storage set, bytes32 value)
-        internal
-        view
-        returns (bool)
-    {
-        return _contains(set._inner, value);
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(Bytes32Set storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(Bytes32Set storage set, uint256 index)
-        internal
-        view
-        returns (bytes32)
-    {
-        return _at(set._inner, index);
-    }
-
-    // AddressSet
-
-    struct AddressSet {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(AddressSet storage set, address value)
-        internal
-        returns (bool)
-    {
-        return _add(set._inner, bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(AddressSet storage set, address value)
-        internal
-        returns (bool)
-    {
-        return _remove(set._inner, bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(AddressSet storage set, address value)
-        internal
-        view
-        returns (bool)
-    {
-        return _contains(set._inner, bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Returns the number of values in the set. O(1).
-     */
-    function length(AddressSet storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(AddressSet storage set, uint256 index)
-        internal
-        view
-        returns (address)
-    {
-        return address(uint160(uint256(_at(set._inner, index))));
-    }
-
-    // UintSet
-
-    struct UintSet {
-        Set _inner;
-    }
-
-    /**
-     * @dev Add a value to a set. O(1).
-     *
-     * Returns true if the value was added to the set, that is if it was not
-     * already present.
-     */
-    function add(UintSet storage set, uint256 value) internal returns (bool) {
-        return _add(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the value was removed from the set, that is if it was
-     * present.
-     */
-    function remove(UintSet storage set, uint256 value)
-        internal
-        returns (bool)
-    {
-        return _remove(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Returns true if the value is in the set. O(1).
-     */
-    function contains(UintSet storage set, uint256 value)
-        internal
-        view
-        returns (bool)
-    {
-        return _contains(set._inner, bytes32(value));
-    }
-
-    /**
-     * @dev Returns the number of values on the set. O(1).
-     */
-    function length(UintSet storage set) internal view returns (uint256) {
-        return _length(set._inner);
-    }
-
-    /**
-     * @dev Returns the value stored at position `index` in the set. O(1).
-     *
-     * Note that there are no guarantees on the ordering of values inside the
-     * array, and it may change when more values are added or removed.
-     *
-     * Requirements:
-     *
-     * - `index` must be strictly less than {length}.
-     */
-    function at(UintSet storage set, uint256 index)
-        internal
-        view
-        returns (uint256)
-    {
-        return uint256(_at(set._inner, index));
+    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
+        bytes memory buffer = new bytes(2 * length + 2);
+        buffer[0] = "0";
+        buffer[1] = "x";
+        for (uint256 i = 2 * length + 1; i > 1; --i) {
+            buffer[i] = _HEX_SYMBOLS[value & 0xf];
+            value >>= 4;
+        }
+        require(value == 0, "Strings: hex length insufficient");
+        return string(buffer);
     }
 }
 
 
 /**
- * @dev Interface of the ERC20 standard as defined in the EIP.
+ * @dev Provides information about the current execution context, including the
+ * sender of the transaction and its data. While these are generally available
+ * via msg.sender and msg.data, they should not be accessed in such a direct
+ * manner, since when dealing with meta-transactions the account sending and
+ * paying for execution may not be the actual sender (as far as an application
+ * is concerned).
+ *
+ * This contract is only required for intermediate, library-like contracts.
  */
-interface IERC20 {
-    /**
-     * @dev Returns the amount of tokens in existence.
-     */
-    function totalSupply() external view returns (uint256);
+abstract contract Context {
+    function _msgSender() internal view virtual returns (address) {
+        return msg.sender;
+    }
 
-    /**
-     * @dev Returns the amount of tokens owned by `account`.
-     */
-    function balanceOf(address account) external view returns (uint256);
-
-    /**
-     * @dev Moves `amount` tokens from the caller's account to `recipient`.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transfer(address recipient, uint256 amount)
-        external
-        returns (bool);
-
-    /**
-     * @dev Returns the remaining number of tokens that `spender` will be
-     * allowed to spend on behalf of `owner` through {transferFrom}. This is
-     * zero by default.
-     *
-     * This value changes when {approve} or {transferFrom} are called.
-     */
-    function allowance(address owner, address spender)
-        external
-        view
-        returns (uint256);
-
-    /**
-     * @dev Sets `amount` as the allowance of `spender` over the caller's tokens.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
-     * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solution to mitigate this race
-     * condition is to first reduce the spender's allowance to 0 and set the
-     * desired value afterwards:
-     * https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address spender, uint256 amount) external returns (bool);
-
-    /**
-     * @dev Moves `amount` tokens from `sender` to `recipient` using the
-     * allowance mechanism. `amount` is then deducted from the caller's
-     * allowance.
-     *
-     * Returns a boolean value indicating whether the operation succeeded.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(
-        address sender,
-        address recipient,
-        uint256 amount
-    ) external returns (bool);
-
-    /**
-     * @dev Emitted when `value` tokens are moved from one account (`from`) to
-     * another (`to`).
-     *
-     * Note that `value` may be zero.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
-    /**
-     * @dev Emitted when the allowance of a `spender` for an `owner` is set by
-     * a call to {approve}. `value` is the new allowance.
-     */
-    event Approval(
-        address indexed owner,
-        address indexed spender,
-        uint256 value
-    );
+    function _msgData() internal view virtual returns (bytes calldata) {
+        return msg.data;
+    }
 }
 
+
+/**
+ * @dev Contract module which provides a basic access control mechanism, where
+ * there is an account (an owner) that can be granted exclusive access to
+ * specific functions.
+ *
+ * By default, the owner account will be the one that deploys the contract. This
+ * can later be changed with {transferOwnership}.
+ *
+ * This module is used through inheritance. It will make available the modifier
+ * `onlyOwner`, which can be applied to your functions to restrict their use to
+ * the owner.
+ */
+abstract contract Ownable is Context {
+    address private _owner;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+
+    /**
+     * @dev Initializes the contract setting the deployer as the initial owner.
+     */
+    constructor() {
+        _transferOwnership(_msgSender());
+    }
+
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function owner() public view virtual returns (address) {
+        return _owner;
+    }
+
+    /**
+     * @dev Throws if called by any account other than the owner.
+     */
+    modifier onlyOwner() {
+        require(owner() == _msgSender(), "Ownable: caller is not the owner");
+        _;
+    }
+
+    /**
+     * @dev Leaves the contract without owner. It will not be possible to call
+     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     *
+     * NOTE: Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the owner.
+     */
+    function renounceOwnership() public virtual onlyOwner {
+        _transferOwnership(address(0));
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Can only be called by the current owner.
+     */
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+        _transferOwnership(newOwner);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     */
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
+        _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+}
 
 /**
  * @dev Collection of functions related to the address type
@@ -600,17 +353,22 @@ library Address {
      *  - an address where a contract will be created
      *  - an address where a contract lived, but was destroyed
      * ====
+     *
+     * [IMPORTANT]
+     * ====
+     * You shouldn't rely on `isContract` to protect against flash loan attacks!
+     *
+     * Preventing calls from contracts is highly discouraged. It breaks composability, breaks support for smart wallets
+     * like Gnosis Safe, and does not provide security since it can be circumvented by calling from a contract
+     * constructor.
+     * ====
      */
     function isContract(address account) internal view returns (bool) {
-        // This method relies on extcodesize, which returns 0 for contracts in
-        // construction, since the code is only stored at the end of the
-        // constructor execution.
+        // This method relies on extcodesize/address.code.length, which returns 0
+        // for contracts in construction, since the code is only stored at the end
+        // of the constructor execution.
 
-        uint256 size;
-        assembly {
-            size := extcodesize(account)
-        }
-        return size > 0;
+        return account.code.length > 0;
     }
 
     /**
@@ -627,19 +385,13 @@ library Address {
      * IMPORTANT: because control is transferred to `recipient`, care must be
      * taken to not create reentrancy vulnerabilities. Consider using
      * {ReentrancyGuard} or the
-     * https://solidity.readthedocs.io/en/v0.5.11/secURIty-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
+     * https://solidity.readthedocs.io/en/v0.5.11/security-considerations.html#use-the-checks-effects-interactions-pattern[checks-effects-interactions pattern].
      */
     function sendValue(address payable recipient, uint256 amount) internal {
-        require(
-            address(this).balance >= amount,
-            "Address: insufficient balance"
-        );
+        require(address(this).balance >= amount, "Address: insufficient balance");
 
         (bool success, ) = recipient.call{value: amount}("");
-        require(
-            success,
-            "Address: unable to send value, recipient may have reverted"
-        );
+        require(success, "Address: unable to send value, recipient may have reverted");
     }
 
     /**
@@ -660,10 +412,7 @@ library Address {
      *
      * _Available since v3.1._
      */
-    function functionCall(address target, bytes memory data)
-        internal
-        returns (bytes memory)
-    {
+    function functionCall(address target, bytes memory data) internal returns (bytes memory) {
         return functionCall(target, data, "Address: low-level call failed");
     }
 
@@ -697,13 +446,7 @@ library Address {
         bytes memory data,
         uint256 value
     ) internal returns (bytes memory) {
-        return
-            functionCallWithValue(
-                target,
-                data,
-                value,
-                "Address: low-level call with value failed"
-            );
+        return functionCallWithValue(target, data, value, "Address: low-level call with value failed");
     }
 
     /**
@@ -718,16 +461,11 @@ library Address {
         uint256 value,
         string memory errorMessage
     ) internal returns (bytes memory) {
-        require(
-            address(this).balance >= value,
-            "Address: insufficient balance for call"
-        );
+        require(address(this).balance >= value, "Address: insufficient balance for call");
         require(isContract(target), "Address: call to non-contract");
 
-        (bool success, bytes memory returndata) = target.call{value: value}(
-            data
-        );
-        return _verifyCallResult(success, returndata, errorMessage);
+        (bool success, bytes memory returndata) = target.call{value: value}(data);
+        return verifyCallResult(success, returndata, errorMessage);
     }
 
     /**
@@ -736,17 +474,8 @@ library Address {
      *
      * _Available since v3.3._
      */
-    function functionStaticCall(address target, bytes memory data)
-        internal
-        view
-        returns (bytes memory)
-    {
-        return
-            functionStaticCall(
-                target,
-                data,
-                "Address: low-level static call failed"
-            );
+    function functionStaticCall(address target, bytes memory data) internal view returns (bytes memory) {
+        return functionStaticCall(target, data, "Address: low-level static call failed");
     }
 
     /**
@@ -763,7 +492,7 @@ library Address {
         require(isContract(target), "Address: static call to non-contract");
 
         (bool success, bytes memory returndata) = target.staticcall(data);
-        return _verifyCallResult(success, returndata, errorMessage);
+        return verifyCallResult(success, returndata, errorMessage);
     }
 
     /**
@@ -772,16 +501,8 @@ library Address {
      *
      * _Available since v3.4._
      */
-    function functionDelegateCall(address target, bytes memory data)
-        internal
-        returns (bytes memory)
-    {
-        return
-            functionDelegateCall(
-                target,
-                data,
-                "Address: low-level delegate call failed"
-            );
+    function functionDelegateCall(address target, bytes memory data) internal returns (bytes memory) {
+        return functionDelegateCall(target, data, "Address: low-level delegate call failed");
     }
 
     /**
@@ -798,14 +519,20 @@ library Address {
         require(isContract(target), "Address: delegate call to non-contract");
 
         (bool success, bytes memory returndata) = target.delegatecall(data);
-        return _verifyCallResult(success, returndata, errorMessage);
+        return verifyCallResult(success, returndata, errorMessage);
     }
 
-    function _verifyCallResult(
+    /**
+     * @dev Tool to verifies that a low level call was successful, and revert if it wasn't, either by bubbling the
+     * revert reason using the provided one.
+     *
+     * _Available since v4.3._
+     */
+    function verifyCallResult(
         bool success,
         bytes memory returndata,
         string memory errorMessage
-    ) private pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         if (success) {
             return returndata;
         } else {
@@ -824,133 +551,28 @@ library Address {
     }
 }
 
-
-
-
 /**
- * @title SafeERC20
- * @dev Wrappers around ERC20 operations that throw on failure (when the token
- * contract returns false). Tokens that return no value (and instead revert or
- * throw on failure) are also supported, non-reverting calls are assumed to be
- * successful.
- * To use this library you can add a `using SafeERC20 for IERC20;` statement to your contract,
- * which allows you to call the safe operations as `token.safeTransfer(...)`, etc.
+ * @title ERC721 token receiver interface
+ * @dev Interface for any contract that wants to support safeTransfers
+ * from ERC721 asset contracts.
  */
-library SafeERC20 {
-    using Address for address;
-
-    function safeTransfer(
-        IERC20 token,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transfer.selector, to, value)
-        );
-    }
-
-    function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 value
-    ) internal {
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.transferFrom.selector, from, to, value)
-        );
-    }
-
+interface IERC721Receiver {
     /**
-     * @dev Deprecated. This function has issues similar to the ones found in
-     * {IERC20-approve}, and its usage is discouraged.
+     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
+     * by `operator` from `from`, this function is called.
      *
-     * Whenever possible, use {safeIncreaseAllowance} and
-     * {safeDecreaseAllowance} instead.
+     * It must return its Solidity selector to confirm the token transfer.
+     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
+     *
+     * The selector can be obtained in Solidity with `IERC721Receiver.onERC721Received.selector`.
      */
-    function safeApprove(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        // safeApprove should only be called when setting an initial allowance,
-        // or when resetting it to zero. To increase and decrease it, use
-        // 'safeIncreaseAllowance' and 'safeDecreaseAllowance'
-        require(
-            (value == 0) || (token.allowance(address(this), spender) == 0),
-            "SafeERC20: approve from non-zero to non-zero allowance"
-        );
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(token.approve.selector, spender, value)
-        );
-    }
-
-    function safeIncreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        uint256 newAllowance = token.allowance(address(this), spender) + value;
-        _callOptionalReturn(
-            token,
-            abi.encodeWithSelector(
-                token.approve.selector,
-                spender,
-                newAllowance
-            )
-        );
-    }
-
-    function safeDecreaseAllowance(
-        IERC20 token,
-        address spender,
-        uint256 value
-    ) internal {
-        unchecked {
-            uint256 oldAllowance = token.allowance(address(this), spender);
-            require(
-                oldAllowance >= value,
-                "SafeERC20: decreased allowance below zero"
-            );
-            uint256 newAllowance = oldAllowance - value;
-            _callOptionalReturn(
-                token,
-                abi.encodeWithSelector(
-                    token.approve.selector,
-                    spender,
-                    newAllowance
-                )
-            );
-        }
-    }
-
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its variants).
-     */
-    function _callOptionalReturn(IERC20 token, bytes memory data) private {
-        // We need to perform a low level call here, to bypass Solidity's return data size checking mechanism, since
-        // we're implementing it ourselves. We use {Address.functionCall} to perform this call, which verifies that
-        // the target address contains contract code and also asserts for success in the low-level call.
-
-        bytes memory returndata = address(token).functionCall(
-            data,
-            "SafeERC20: low-level call failed"
-        );
-        if (returndata.length > 0) {
-            // Return data is optional
-            require(
-                abi.decode(returndata, (bool)),
-                "SafeERC20: ERC20 operation did not succeed"
-            );
-        }
-    }
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) external returns (bytes4);
 }
-
 
 /**
  * @dev Interface of the ERC165 standard, as defined in the
@@ -973,6 +595,30 @@ interface IERC165 {
     function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
+
+/**
+ * @dev Implementation of the {IERC165} interface.
+ *
+ * Contracts that want to implement ERC165 should inherit from this contract and override {supportsInterface} to check
+ * for the additional interface id that will be supported. For example:
+ *
+ * ```solidity
+ * function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+ *     return interfaceId == type(MyInterface).interfaceId || super.supportsInterface(interfaceId);
+ * }
+ * ```
+ *
+ * Alternatively, {ERC165Storage} provides an easier to use but more expensive implementation.
+ */
+abstract contract ERC165 is IERC165 {
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IERC165).interfaceId;
+    }
+}
+
 /**
  * @dev Required interface of an ERC721 compliant contract.
  */
@@ -980,29 +626,17 @@ interface IERC721 is IERC165 {
     /**
      * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
      */
-    event Transfer(
-        address indexed from,
-        address indexed to,
-        uint256 indexed tokenId
-    );
+    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
 
     /**
      * @dev Emitted when `owner` enables `approved` to manage the `tokenId` token.
      */
-    event Approval(
-        address indexed owner,
-        address indexed approved,
-        uint256 indexed tokenId
-    );
+    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
 
     /**
      * @dev Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.
      */
-    event ApprovalForAll(
-        address indexed owner,
-        address indexed operator,
-        bool approved
-    );
+    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
 
     /**
      * @dev Returns the number of tokens in ``owner``'s account.
@@ -1017,6 +651,26 @@ interface IERC721 is IERC165 {
      * - `tokenId` must exist.
      */
     function ownerOf(uint256 tokenId) external view returns (address owner);
+
+    /**
+     * @dev Safely transfers `tokenId` token from `from` to `to`.
+     *
+     * Requirements:
+     *
+     * - `from` cannot be the zero address.
+     * - `to` cannot be the zero address.
+     * - `tokenId` token must exist and be owned by `from`.
+     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     *
+     * Emits a {Transfer} event.
+     */
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes calldata data
+    ) external;
 
     /**
      * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
@@ -1074,18 +728,6 @@ interface IERC721 is IERC165 {
     function approve(address to, uint256 tokenId) external;
 
     /**
-     * @dev Returns the account approved for `tokenId` token.
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist.
-     */
-    function getApproved(uint256 tokenId)
-        external
-        view
-        returns (address operator);
-
-    /**
      * @dev Approve or remove `operator` as an operator for the caller.
      * Operators can call {transferFrom} or {safeTransferFrom} for any token owned by the caller.
      *
@@ -1098,135 +740,28 @@ interface IERC721 is IERC165 {
     function setApprovalForAll(address operator, bool _approved) external;
 
     /**
+     * @dev Returns the account approved for `tokenId` token.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
+     */
+    function getApproved(uint256 tokenId) external view returns (address operator);
+
+    /**
      * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
      *
      * See {setApprovalForAll}
      */
-    function isApprovedForAll(address owner, address operator)
-        external
-        view
-        returns (bool);
-
-    /**
-     * @dev Safely transfers `tokenId` token from `from` to `to`.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must exist and be owned by `from`.
-     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
-     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-     *
-     * Emits a {Transfer} event.
-     */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes calldata data
-    ) external;
-
+    function isApprovedForAll(address owner, address operator) external view returns (bool);
 }
 
-
-/**
- * @title ERC721 token receiver interface
- * @dev Interface for any contract that wants to support safeTransfers
- * from ERC721 asset contracts.
- */
-interface IERC721Receiver {
-    /**
-     * @dev Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
-     * by `operator` from `from`, this function is called.
-     *
-     * It must return its Solidity selector to confirm the token transfer.
-     * If any other value is returned or the interface is not implemented by the recipient, the transfer will be reverted.
-     *
-     * The selector can be obtained in Solidity with `IERC721.onERC721Received.selector`.
-     */
-    function onERC721Received(
-        address operator,
-        address from,
-        uint256 tokenId,
-        bytes calldata data
-    ) external returns (bytes4);
-}
-
-
-/**
- * @dev Implementation of the {IERC721Receiver} interface.
- *
- * Accepts all token transfers.
- * Make sure the contract is able to use its token with {IERC721-safeTransferFrom}, {IERC721-approve} or {IERC721-setApprovalForAll}.
- */
-contract ERC721Holder is IERC721Receiver {
-    /**
-     * @dev See {IERC721Receiver-onERC721Received}.
-     *
-     * Always returns `IERC721Receiver.onERC721Received.selector`.
-     */
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public virtual override returns (bytes4) {
-        return this.onERC721Received.selector;
-    }
-}
-
-
-interface IWETH {
-    function deposit() external payable;
-
-    function transfer(address to, uint256 value) external returns (bool);
-
-    function withdraw(uint256) external;
-}
-
-library Counters {
-    struct Counter {
-        // This variable should never be directly accessed by users of the library: interactions must be restricted to
-        // the library's function. As of Solidity v0.5.2, this cannot be enforced, though there is a proposal to add
-        // this feature: see https://github.com/ethereum/solidity/issues/4637
-        uint256 _value; // default: 0
-    }
-
-    function current(Counter storage counter) internal view returns (uint256) {
-        return counter._value;
-    }
-
-    function increment(Counter storage counter) internal {
-        unchecked {
-            counter._value += 1;
-        }
-    }
-
-    function decrement(Counter storage counter) internal {
-        uint256 value = counter._value;
-        require(value > 0, "Counter: decrement overflow");
-        unchecked {
-            counter._value = value - 1;
-        }
-    }
-
-    function reset(Counter storage counter) internal {
-        counter._value = 0;
-    }
-}
-
-
-interface ICollectionWhitelistChecker {
-    function canList(uint256 _tokenId) external view returns (bool);
-}
 
 /**
  * @title ERC-721 Non-Fungible Token Standard, optional metadata extension
  * @dev See https://eips.ethereum.org/EIPS/eip-721
  */
 interface IERC721Metadata is IERC721 {
-
     /**
      * @dev Returns the token collection name.
      */
@@ -1244,650 +779,13 @@ interface IERC721Metadata is IERC721 {
 }
 
 /**
- * @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
- * @dev See https://eips.ethereum.org/EIPS/eip-721
+ * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
+ * the Metadata extension, but not including the Enumerable extension, which is available separately as
+ * {ERC721Enumerable}.
  */
-interface IERC721Enumerable is IERC721 {
-
-    /**
-     * @dev Returns the total amount of tokens stored by the contract.
-     */
-    function totalSupply() external view returns (uint256);
-
-    /**
-     * @dev Returns a token ID owned by `owner` at a given `index` of its token list.
-     * Use along with {balanceOf} to enumerate all of ``owner``'s tokens.
-     */
-    function tokenOfOwnerByIndex(address owner, uint256 index) external view returns (uint256 tokenId);
-
-    /**
-     * @dev Returns a token ID at a given `index` of all the tokens stored by the contract.
-     * Use along with {totalSupply} to enumerate all tokens.
-     */
-    function tokenByIndex(uint256 index) external view returns (uint256);
-}
-
-/**
- * @dev Library for managing an enumerable variant of Solidity's
- * https://solidity.readthedocs.io/en/latest/types.html#mapping-types[`mapping`]
- * type.
- *
- * Maps have the following properties:
- *
- * - Entries are added, removed, and checked for existence in constant time
- * (O(1)).
- * - Entries are enumerated in O(n). No guarantees are made on the ordering.
- *
- * ```
- * contract Example {
- *     // Add the library methods
- *     using EnumerableMap for EnumerableMap.UintToAddressMap;
- *
- *     // Declare a set state variable
- *     EnumerableMap.UintToAddressMap private myMap;
- * }
- * ```
- *
- * As of v3.0.0, only maps of type `uint256 -> address` (`UintToAddressMap`) are
- * supported.
- */
-library EnumerableMap {
-    // To implement this library for multiple types with as little code
-    // repetition as possible, we write it in terms of a generic Map type with
-    // bytes32 keys and values.
-    // The Map implementation uses private functions, and user-facing
-    // implementations (such as Uint256ToAddressMap) are just wrappers around
-    // the underlying Map.
-    // This means that we can only create new EnumerableMaps for types that fit
-    // in bytes32.
-
-    struct MapEntry {
-        bytes32 _key;
-        bytes32 _value;
-    }
-
-    struct Map {
-        // Storage of map keys and values
-        MapEntry[] _entries;
-
-        // Position of the entry defined by a key in the `entries` array, plus 1
-        // because index 0 means a key is not in the map.
-        mapping (bytes32 => uint256) _indexes;
-    }
-
-    /**
-     * @dev Adds a key-value pair to a map, or updates the value for an existing
-     * key. O(1).
-     *
-     * Returns true if the key was added to the map, that is if it was not
-     * already present.
-     */
-    function _set(Map storage map, bytes32 key, bytes32 value) private returns (bool) {
-        // We read and store the key's index to prevent multiple reads from the same storage slot
-        uint256 keyIndex = map._indexes[key];
-
-        if (keyIndex == 0) { // Equivalent to !contains(map, key)
-            map._entries.push(MapEntry({ _key: key, _value: value }));
-            // The entry is stored at length-1, but we add 1 to all indexes
-            // and use 0 as a sentinel value
-            map._indexes[key] = map._entries.length;
-            return true;
-        } else {
-            map._entries[keyIndex - 1]._value = value;
-            return false;
-        }
-    }
-
-    /**
-     * @dev Removes a key-value pair from a map. O(1).
-     *
-     * Returns true if the key was removed from the map, that is if it was present.
-     */
-    function _remove(Map storage map, bytes32 key) private returns (bool) {
-        // We read and store the key's index to prevent multiple reads from the same storage slot
-        uint256 keyIndex = map._indexes[key];
-
-        if (keyIndex != 0) { // Equivalent to contains(map, key)
-            // To delete a key-value pair from the _entries array in O(1), we swap the entry to delete with the last one
-            // in the array, and then remove the last entry (sometimes called as 'swap and pop').
-            // This modifies the order of the array, as noted in {at}.
-
-            uint256 toDeleteIndex = keyIndex - 1;
-            uint256 lastIndex = map._entries.length - 1;
-
-            // When the entry to delete is the last one, the swap operation is unnecessary. However, since this occurs
-            // so rarely, we still do the swap anyway to avoid the gas cost of adding an 'if' statement.
-
-            MapEntry storage lastEntry = map._entries[lastIndex];
-
-            // Move the last entry to the index where the entry to delete is
-            map._entries[toDeleteIndex] = lastEntry;
-            // Update the index for the moved entry
-            map._indexes[lastEntry._key] = toDeleteIndex + 1; // All indexes are 1-based
-
-            // Delete the slot where the moved entry was stored
-            map._entries.pop();
-
-            // Delete the index for the deleted slot
-            delete map._indexes[key];
-
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @dev Returns true if the key is in the map. O(1).
-     */
-    function _contains(Map storage map, bytes32 key) private view returns (bool) {
-        return map._indexes[key] != 0;
-    }
-
-    /**
-     * @dev Returns the number of key-value pairs in the map. O(1).
-     */
-    function _length(Map storage map) private view returns (uint256) {
-        return map._entries.length;
-    }
-
-   /**
-    * @dev Returns the key-value pair stored at position `index` in the map. O(1).
-    *
-    * Note that there are no guarantees on the ordering of entries inside the
-    * array, and it may change when more entries are added or removed.
-    *
-    * Requirements:
-    *
-    * - `index` must be strictly less than {length}.
-    */
-    function _at(Map storage map, uint256 index) private view returns (bytes32, bytes32) {
-        require(map._entries.length > index, "EnumerableMap: index out of bounds");
-
-        MapEntry storage entry = map._entries[index];
-        return (entry._key, entry._value);
-    }
-
-    /**
-     * @dev Tries to returns the value associated with `key`.  O(1).
-     * Does not revert if `key` is not in the map.
-     */
-    function _tryGet(Map storage map, bytes32 key) private view returns (bool, bytes32) {
-        uint256 keyIndex = map._indexes[key];
-        if (keyIndex == 0) return (false, 0); // Equivalent to contains(map, key)
-        return (true, map._entries[keyIndex - 1]._value); // All indexes are 1-based
-    }
-
-    /**
-     * @dev Returns the value associated with `key`.  O(1).
-     *
-     * Requirements:
-     *
-     * - `key` must be in the map.
-     */
-    function _get(Map storage map, bytes32 key) private view returns (bytes32) {
-        uint256 keyIndex = map._indexes[key];
-        require(keyIndex != 0, "EnumerableMap: nonexistent key"); // Equivalent to contains(map, key)
-        return map._entries[keyIndex - 1]._value; // All indexes are 1-based
-    }
-
-    /**
-     * @dev Same as {_get}, with a custom error message when `key` is not in the map.
-     *
-     * CAUTION: This function is deprecated because it requires allocating memory for the error
-     * message unnecessarily. For custom revert reasons use {_tryGet}.
-     */
-    function _get(Map storage map, bytes32 key, string memory errorMessage) private view returns (bytes32) {
-        uint256 keyIndex = map._indexes[key];
-        require(keyIndex != 0, errorMessage); // Equivalent to contains(map, key)
-        return map._entries[keyIndex - 1]._value; // All indexes are 1-based
-    }
-
-    // UintToAddressMap
-
-    struct UintToAddressMap {
-        Map _inner;
-    }
-
-    /**
-     * @dev Adds a key-value pair to a map, or updates the value for an existing
-     * key. O(1).
-     *
-     * Returns true if the key was added to the map, that is if it was not
-     * already present.
-     */
-    function set(UintToAddressMap storage map, uint256 key, address value) internal returns (bool) {
-        return _set(map._inner, bytes32(key), bytes32(uint256(uint160(value))));
-    }
-
-    /**
-     * @dev Removes a value from a set. O(1).
-     *
-     * Returns true if the key was removed from the map, that is if it was present.
-     */
-    function remove(UintToAddressMap storage map, uint256 key) internal returns (bool) {
-        return _remove(map._inner, bytes32(key));
-    }
-
-    /**
-     * @dev Returns true if the key is in the map. O(1).
-     */
-    function contains(UintToAddressMap storage map, uint256 key) internal view returns (bool) {
-        return _contains(map._inner, bytes32(key));
-    }
-
-    /**
-     * @dev Returns the number of elements in the map. O(1).
-     */
-    function length(UintToAddressMap storage map) internal view returns (uint256) {
-        return _length(map._inner);
-    }
-
-   /**
-    * @dev Returns the element stored at position `index` in the set. O(1).
-    * Note that there are no guarantees on the ordering of values inside the
-    * array, and it may change when more values are added or removed.
-    *
-    * Requirements:
-    *
-    * - `index` must be strictly less than {length}.
-    */
-    function at(UintToAddressMap storage map, uint256 index) internal view returns (uint256, address) {
-        (bytes32 key, bytes32 value) = _at(map._inner, index);
-        return (uint256(key), address(uint160(uint256(value))));
-    }
-
-    /**
-     * @dev Tries to returns the value associated with `key`.  O(1).
-     * Does not revert if `key` is not in the map.
-     *
-     * _Available since v3.4._
-     */
-    function tryGet(UintToAddressMap storage map, uint256 key) internal view returns (bool, address) {
-        (bool success, bytes32 value) = _tryGet(map._inner, bytes32(key));
-        return (success, address(uint160(uint256(value))));
-    }
-
-    /**
-     * @dev Returns the value associated with `key`.  O(1).
-     *
-     * Requirements:
-     *
-     * - `key` must be in the map.
-     */
-    function get(UintToAddressMap storage map, uint256 key) internal view returns (address) {
-        return address(uint160(uint256(_get(map._inner, bytes32(key)))));
-    }
-
-    /**
-     * @dev Same as {get}, with a custom error message when `key` is not in the map.
-     *
-     * CAUTION: This function is deprecated because it requires allocating memory for the error
-     * message unnecessarily. For custom revert reasons use {tryGet}.
-     */
-    function get(UintToAddressMap storage map, uint256 key, string memory errorMessage) internal view returns (address) {
-        return address(uint160(uint256(_get(map._inner, bytes32(key), errorMessage))));
-    }
-}
-
-
-/**
- * @dev Implementation of the {IERC165} interface.
- *
- * Contracts may inherit from this and call {_registerInterface} to declare
- * their support of an interface.
- */
-abstract contract ERC165 is IERC165 {
-    /*
-     * bytes4(keccak256('supportsInterface(bytes4)')) == 0x01ffc9a7
-     */
-    bytes4 private constant _INTERFACE_ID_ERC165 = 0x01ffc9a7;
-
-    /**
-     * @dev Mapping of interface ids to whether or not it's supported.
-     */
-    mapping(bytes4 => bool) private _supportedInterfaces;
-
-    constructor () {
-        // Derived contracts need only register support for their own interfaces,
-        // we register support for ERC165 itself here
-        _registerInterface(_INTERFACE_ID_ERC165);
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     *
-     * Time complexity O(1), guaranteed to always use less than 30 000 gas.
-     */
-    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return _supportedInterfaces[interfaceId];
-    }
-
-    /**
-     * @dev Registers the contract as an implementer of the interface defined by
-     * `interfaceId`. Support of the actual ERC165 interface is automatic and
-     * registering its interface id is not required.
-     *
-     * See {IERC165-supportsInterface}.
-     *
-     * Requirements:
-     *
-     * - `interfaceId` cannot be the ERC165 invalid interface (`0xffffffff`).
-     */
-    function _registerInterface(bytes4 interfaceId) internal virtual {
-        require(interfaceId != 0xffffffff, "ERC165: invalid interface id");
-        _supportedInterfaces[interfaceId] = true;
-    }
-}
-
-/**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
-library SafeMath {
-    /**
-     * @dev Returns the addition of two unsigned integers, with an overflow flag.
-     *
-     * _Available since v3.4._
-     */
-    function tryAdd(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        uint256 c = a + b;
-        if (c < a) return (false, 0);
-        return (true, c);
-    }
-
-    /**
-     * @dev Returns the substraction of two unsigned integers, with an overflow flag.
-     *
-     * _Available since v3.4._
-     */
-    function trySub(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        if (b > a) return (false, 0);
-        return (true, a - b);
-    }
-
-    /**
-     * @dev Returns the multiplication of two unsigned integers, with an overflow flag.
-     *
-     * _Available since v3.4._
-     */
-    function tryMul(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-        // benefit is lost if 'b' is also tested.
-        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
-        if (a == 0) return (true, 0);
-        uint256 c = a * b;
-        if (c / a != b) return (false, 0);
-        return (true, c);
-    }
-
-    /**
-     * @dev Returns the division of two unsigned integers, with a division by zero flag.
-     *
-     * _Available since v3.4._
-     */
-    function tryDiv(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        if (b == 0) return (false, 0);
-        return (true, a / b);
-    }
-
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers, with a division by zero flag.
-     *
-     * _Available since v3.4._
-     */
-    function tryMod(uint256 a, uint256 b) internal pure returns (bool, uint256) {
-        if (b == 0) return (false, 0);
-        return (true, a % b);
-    }
-
-    /**
-     * @dev Returns the addition of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `+` operator.
-     *
-     * Requirements:
-     *
-     * - Addition cannot overflow.
-     */
-    function add(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-        return c;
-    }
-
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting on
-     * overflow (when the result is negative).
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b <= a, "SafeMath: subtraction overflow");
-        return a - b;
-    }
-
-    /**
-     * @dev Returns the multiplication of two unsigned integers, reverting on
-     * overflow.
-     *
-     * Counterpart to Solidity's `*` operator.
-     *
-     * Requirements:
-     *
-     * - Multiplication cannot overflow.
-     */
-    function mul(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a == 0) return 0;
-        uint256 c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-        return c;
-    }
-
-    /**
-     * @dev Returns the integer division of two unsigned integers, reverting on
-     * division by zero. The result is rounded towards zero.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0, "SafeMath: division by zero");
-        return a / b;
-    }
-
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * reverting when dividing by zero.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b) internal pure returns (uint256) {
-        require(b > 0, "SafeMath: modulo by zero");
-        return a % b;
-    }
-
-    /**
-     * @dev Returns the subtraction of two unsigned integers, reverting with custom message on
-     * overflow (when the result is negative).
-     *
-     * CAUTION: This function is deprecated because it requires allocating memory for the error
-     * message unnecessarily. For custom revert reasons use {trySub}.
-     *
-     * Counterpart to Solidity's `-` operator.
-     *
-     * Requirements:
-     *
-     * - Subtraction cannot overflow.
-     */
-    function sub(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b <= a, errorMessage);
-        return a - b;
-    }
-
-    /**
-     * @dev Returns the integer division of two unsigned integers, reverting with custom message on
-     * division by zero. The result is rounded towards zero.
-     *
-     * CAUTION: This function is deprecated because it requires allocating memory for the error
-     * message unnecessarily. For custom revert reasons use {tryDiv}.
-     *
-     * Counterpart to Solidity's `/` operator. Note: this function uses a
-     * `revert` opcode (which leaves remaining gas untouched) while Solidity
-     * uses an invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function div(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b > 0, errorMessage);
-        return a / b;
-    }
-
-    /**
-     * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-     * reverting with custom message when dividing by zero.
-     *
-     * CAUTION: This function is deprecated because it requires allocating memory for the error
-     * message unnecessarily. For custom revert reasons use {tryMod}.
-     *
-     * Counterpart to Solidity's `%` operator. This function uses a `revert`
-     * opcode (which leaves remaining gas untouched) while Solidity uses an
-     * invalid opcode to revert (consuming all remaining gas).
-     *
-     * Requirements:
-     *
-     * - The divisor cannot be zero.
-     */
-    function mod(uint256 a, uint256 b, string memory errorMessage) internal pure returns (uint256) {
-        require(b > 0, errorMessage);
-        return a % b;
-    }
-}
-
-/**
- * @dev String operations.
- */
-library Strings {
-    bytes16 private constant _HEX_SYMBOLS = "0123456789abcdef";
-    uint8 private constant _ADDRESS_LENGTH = 20;
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
-     */
-    function toString(uint256 value) internal pure returns (string memory) {
-        // Inspired by OraclizeAPI's implementation - MIT licence
-        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
-
-        if (value == 0) {
-            return "0";
-        }
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation.
-     */
-    function toHexString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) {
-            return "0x00";
-        }
-        uint256 temp = value;
-        uint256 length = 0;
-        while (temp != 0) {
-            length++;
-            temp >>= 8;
-        }
-        return toHexString(value, length);
-    }
-
-    /**
-     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
-     */
-    function toHexString(uint256 value, uint256 length) internal pure returns (string memory) {
-        bytes memory buffer = new bytes(2 * length + 2);
-        buffer[0] = "0";
-        buffer[1] = "x";
-        for (uint256 i = 2 * length + 1; i > 1; --i) {
-            buffer[i] = _HEX_SYMBOLS[value & 0xf];
-            value >>= 4;
-        }
-        require(value == 0, "Strings: hex length insufficient");
-        return string(buffer);
-    }
-
-    /**
-     * @dev Converts an `address` with fixed length of 20 bytes to its not checksummed ASCII `string` hexadecimal representation.
-     */
-    function toHexString(address addr) internal pure returns (string memory) {
-        return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
-    }
-}
-
-/**
- * @title ERC721 Non-Fungible Token Standard basic implementation
- * @dev see https://eips.ethereum.org/EIPS/eip-721
- */
-contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable {
-    using SafeMath for uint256;
+contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
     using Address for address;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using EnumerableMap for EnumerableMap.UintToAddressMap;
     using Strings for uint256;
-
-    // Equals to `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
-    // which can be also obtained as `IERC721Receiver(0).onERC721Received.selector`
-    bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
-
-    // Mapping from holder address to their (enumerable) set of owned tokens
-    mapping (address => EnumerableSet.UintSet) private _holderTokens;
-
-    // Enumerable mapping from token ids to their owners
-    EnumerableMap.UintToAddressMap private _tokenOwners;
-
-    // Mapping from token ID to approved address
-    mapping (uint256 => address) private _tokenApprovals;
-
-    // Mapping from owner to operator approvals
-    mapping (address => mapping (address => bool)) private _operatorApprovals;
 
     // Token name
     string private _name;
@@ -1895,57 +793,34 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     // Token symbol
     string private _symbol;
 
-    // Optional mapping for token URIs
-    mapping (uint256 => string) private _tokenURIs;
+    // Mapping from token ID to owner address
+    mapping(uint256 => address) private _owners;
 
-    // Base URI
-    string private _baseURI;
+    // Mapping owner address to token count
+    mapping(address => uint256) private _balances;
 
-    /*
-     *     bytes4(keccak256('balanceOf(address)')) == 0x70a08231
-     *     bytes4(keccak256('ownerOf(uint256)')) == 0x6352211e
-     *     bytes4(keccak256('approve(address,uint256)')) == 0x095ea7b3
-     *     bytes4(keccak256('getApproved(uint256)')) == 0x081812fc
-     *     bytes4(keccak256('setApprovalForAll(address,bool)')) == 0xa22cb465
-     *     bytes4(keccak256('isApprovedForAll(address,address)')) == 0xe985e9c5
-     *     bytes4(keccak256('transferFrom(address,address,uint256)')) == 0x23b872dd
-     *     bytes4(keccak256('safeTransferFrom(address,address,uint256)')) == 0x42842e0e
-     *     bytes4(keccak256('safeTransferFrom(address,address,uint256,bytes)')) == 0xb88d4fde
-     *
-     *     => 0x70a08231 ^ 0x6352211e ^ 0x095ea7b3 ^ 0x081812fc ^
-     *        0xa22cb465 ^ 0xe985e9c5 ^ 0x23b872dd ^ 0x42842e0e ^ 0xb88d4fde == 0x80ac58cd
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
+    // Mapping from token ID to approved address
+    mapping(uint256 => address) private _tokenApprovals;
 
-    /*
-     *     bytes4(keccak256('name()')) == 0x06fdde03
-     *     bytes4(keccak256('symbol()')) == 0x95d89b41
-     *     bytes4(keccak256('tokenURI(uint256)')) == 0xc87b56dd
-     *
-     *     => 0x06fdde03 ^ 0x95d89b41 ^ 0xc87b56dd == 0x5b5e139f
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721_METADATA = 0x5b5e139f;
-
-    /*
-     *     bytes4(keccak256('totalSupply()')) == 0x18160ddd
-     *     bytes4(keccak256('tokenOfOwnerByIndex(address,uint256)')) == 0x2f745c59
-     *     bytes4(keccak256('tokenByIndex(uint256)')) == 0x4f6ccce7
-     *
-     *     => 0x18160ddd ^ 0x2f745c59 ^ 0x4f6ccce7 == 0x780e9d63
-     */
-    bytes4 private constant _INTERFACE_ID_ERC721_ENUMERABLE = 0x780e9d63;
+    // Mapping from owner to operator approvals
+    mapping(address => mapping(address => bool)) private _operatorApprovals;
 
     /**
      * @dev Initializes the contract by setting a `name` and a `symbol` to the token collection.
      */
-    constructor (string memory name_, string memory symbol_) {
+    constructor(string memory name_, string memory symbol_) {
         _name = name_;
         _symbol = symbol_;
+    }
 
-        // register the supported interfaces to conform to ERC721 via ERC165
-        _registerInterface(_INTERFACE_ID_ERC721);
-        _registerInterface(_INTERFACE_ID_ERC721_METADATA);
-        _registerInterface(_INTERFACE_ID_ERC721_ENUMERABLE);
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC165, IERC165) returns (bool) {
+        return
+            interfaceId == type(IERC721).interfaceId ||
+            interfaceId == type(IERC721Metadata).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     /**
@@ -1953,14 +828,16 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      */
     function balanceOf(address owner) public view virtual override returns (uint256) {
         require(owner != address(0), "ERC721: balance query for the zero address");
-        return _holderTokens[owner].length();
+        return _balances[owner];
     }
 
     /**
      * @dev See {IERC721-ownerOf}.
      */
     function ownerOf(uint256 tokenId) public view virtual override returns (address) {
-        return _tokenOwners.get(tokenId, "ERC721: owner query for nonexistent token");
+        address owner = _owners[tokenId];
+        require(owner != address(0), "ERC721: owner query for nonexistent token");
+        return owner;
     }
 
     /**
@@ -1977,56 +854,23 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
         return _symbol;
     }
 
-    function changeSymbol(string memory _newSymbol) external {
-        _symbol = _newSymbol;
-    }
-
-    function changeName(string memory _newName) external {
-        _name = _newName;
-    }
-
-
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-        string memory base = baseURI();
-        // If there is a baseURI but no tokenURI, concatenate the tokenID to the baseURI.
-        return string(abi.encodePacked(base, tokenId.toString()));
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
     }
 
     /**
-        * @dev Returns the base URI set via {_setBaseURI}. This will be
-        * automatically added as a prefix in {tokenURI} to each token's URI, or
-        * to the token ID if no specific URI is set for that token ID.
-        */
-    function baseURI() public view virtual returns (string memory) {
-        return _baseURI;
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-tokenOfOwnerByIndex}.
+     * @dev Base URI for computing {tokenURI}. If set, the resulting URI for each
+     * token will be the concatenation of the `baseURI` and the `tokenId`. Empty
+     * by default, can be overridden in child contracts.
      */
-    function tokenOfOwnerByIndex(address owner, uint256 index) public view virtual override returns (uint256) {
-        return _holderTokens[owner].at(index);
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-totalSupply}.
-     */
-    function totalSupply() public view virtual override returns (uint256) {
-        // _tokenOwners are indexed by tokenIds, so .length() returns the number of tokenIds
-        return _tokenOwners.length();
-    }
-
-    /**
-     * @dev See {IERC721Enumerable-tokenByIndex}.
-     */
-    function tokenByIndex(uint256 index) public view virtual override returns (uint256) {
-        (uint256 tokenId, ) = _tokenOwners.at(index);
-        return tokenId;
+    function _baseURI() internal view virtual returns (string memory) {
+        return "";
     }
 
     /**
@@ -2036,7 +880,8 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
         address owner = ERC721.ownerOf(tokenId);
         require(to != owner, "ERC721: approval to current owner");
 
-        require(_msgSender() == owner || ERC721.isApprovedForAll(owner, _msgSender()),
+        require(
+            _msgSender() == owner || isApprovedForAll(owner, _msgSender()),
             "ERC721: approve caller is not owner nor approved for all"
         );
 
@@ -2056,10 +901,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      * @dev See {IERC721-setApprovalForAll}.
      */
     function setApprovalForAll(address operator, bool approved) public virtual override {
-        require(operator != _msgSender(), "ERC721: approve to caller");
-
-        _operatorApprovals[_msgSender()][operator] = approved;
-        emit ApprovalForAll(_msgSender(), operator, approved);
+        _setApprovalForAll(_msgSender(), operator, approved);
     }
 
     /**
@@ -2072,7 +914,11 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     /**
      * @dev See {IERC721-transferFrom}.
      */
-    function transferFrom(address from, address to, uint256 tokenId) public virtual override {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override {
         //solhint-disable-next-line max-line-length
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
 
@@ -2082,14 +928,23 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     /**
      * @dev See {IERC721-safeTransferFrom}.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId) public virtual override {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public virtual override {
         safeTransferFrom(from, to, tokenId, "");
     }
 
     /**
      * @dev See {IERC721-safeTransferFrom}.
      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public virtual override {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) public virtual override {
         require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721: transfer caller is not owner nor approved");
         _safeTransfer(from, to, tokenId, _data);
     }
@@ -2112,7 +967,12 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      *
      * Emits a {Transfer} event.
      */
-    function _safeTransfer(address from, address to, uint256 tokenId, bytes memory _data) internal virtual {
+    function _safeTransfer(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) internal virtual {
         _transfer(from, to, tokenId);
         require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
     }
@@ -2126,7 +986,7 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      * and stop existing when they are burned (`_burn`).
      */
     function _exists(uint256 tokenId) internal view virtual returns (bool) {
-        return _tokenOwners.contains(tokenId);
+        return _owners[tokenId] != address(0);
     }
 
     /**
@@ -2139,14 +999,14 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
     function _isApprovedOrOwner(address spender, uint256 tokenId) internal view virtual returns (bool) {
         require(_exists(tokenId), "ERC721: operator query for nonexistent token");
         address owner = ERC721.ownerOf(tokenId);
-        return (spender == owner || getApproved(tokenId) == spender || ERC721.isApprovedForAll(owner, spender));
+        return (spender == owner || isApprovedForAll(owner, spender) || getApproved(tokenId) == spender);
     }
 
     /**
      * @dev Safely mints `tokenId` and transfers it to `to`.
      *
      * Requirements:
-     d*
+     *
      * - `tokenId` must not exist.
      * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
      *
@@ -2160,9 +1020,16 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      * @dev Same as {xref-ERC721-_safeMint-address-uint256-}[`_safeMint`], with an additional `data` parameter which is
      * forwarded in {IERC721Receiver-onERC721Received} to contract recipients.
      */
-    function _safeMint(address to, uint256 tokenId, bytes memory _data) internal virtual {
+    function _safeMint(
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) internal virtual {
         _mint(to, tokenId);
-        require(_checkOnERC721Received(address(0), to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+        require(
+            _checkOnERC721Received(address(0), to, tokenId, _data),
+            "ERC721: transfer to non ERC721Receiver implementer"
+        );
     }
 
     /**
@@ -2183,12 +1050,12 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
 
         _beforeTokenTransfer(address(0), to, tokenId);
 
-      
-        _holderTokens[to].add(tokenId);
-
-        _tokenOwners.set(tokenId, to);
+        _balances[to] += 1;
+        _owners[tokenId] = to;
 
         emit Transfer(address(0), to, tokenId);
+
+        _afterTokenTransfer(address(0), to, tokenId);
     }
 
     /**
@@ -2202,23 +1069,19 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      * Emits a {Transfer} event.
      */
     function _burn(uint256 tokenId) internal virtual {
-        address owner = ERC721.ownerOf(tokenId); // internal owner
+        address owner = ERC721.ownerOf(tokenId);
 
         _beforeTokenTransfer(owner, address(0), tokenId);
 
         // Clear approvals
         _approve(address(0), tokenId);
 
-        // Clear metadata (if any)
-        if (bytes(_tokenURIs[tokenId]).length != 0) {
-            delete _tokenURIs[tokenId];
-        }
-
-        _holderTokens[owner].remove(tokenId);
-
-        _tokenOwners.remove(tokenId);
+        _balances[owner] -= 1;
+        delete _owners[tokenId];
 
         emit Transfer(owner, address(0), tokenId);
+
+        _afterTokenTransfer(owner, address(0), tokenId);
     }
 
     /**
@@ -2232,8 +1095,12 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      *
      * Emits a {Transfer} event.
      */
-    function _transfer(address from, address to, uint256 tokenId) internal virtual {
-        require(ERC721.ownerOf(tokenId) == from, "ERC721: transfer of token that is not own"); // internal owner
+    function _transfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual {
+        require(ERC721.ownerOf(tokenId) == from, "ERC721: transfer from incorrect owner");
         require(to != address(0), "ERC721: transfer to the zero address");
 
         _beforeTokenTransfer(from, to, tokenId);
@@ -2241,33 +1108,38 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
         // Clear approvals from the previous owner
         _approve(address(0), tokenId);
 
-        _holderTokens[from].remove(tokenId);
-        _holderTokens[to].add(tokenId);
-
-        _tokenOwners.set(tokenId, to);
+        _balances[from] -= 1;
+        _balances[to] += 1;
+        _owners[tokenId] = to;
 
         emit Transfer(from, to, tokenId);
+
+        _afterTokenTransfer(from, to, tokenId);
     }
 
     /**
-     * @dev Sets `_tokenURI` as the tokenURI of `tokenId`.
+     * @dev Approve `to` to operate on `tokenId`
      *
-     * Requirements:
-     *
-     * - `tokenId` must exist.
+     * Emits a {Approval} event.
      */
-    function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
-        require(_exists(tokenId), "ERC721Metadata: URI set of nonexistent token");
-        _tokenURIs[tokenId] = _tokenURI;
+    function _approve(address to, uint256 tokenId) internal virtual {
+        _tokenApprovals[tokenId] = to;
+        emit Approval(ERC721.ownerOf(tokenId), to, tokenId);
     }
 
     /**
-     * @dev Internal function to set the base URI for all token IDs. It is
-     * automatically added as a prefix to the value returned in {tokenURI},
-     * or to the token ID if {tokenURI} is empty.
+     * @dev Approve `operator` to operate on all of `owner` tokens
+     *
+     * Emits a {ApprovalForAll} event.
      */
-    function _setBaseURI(string memory baseURI_) internal virtual {
-        _baseURI = baseURI_;
+    function _setApprovalForAll(
+        address owner,
+        address operator,
+        bool approved
+    ) internal virtual {
+        require(owner != operator, "ERC721: approve to caller");
+        _operatorApprovals[owner][operator] = approved;
+        emit ApprovalForAll(owner, operator, approved);
     }
 
     /**
@@ -2280,31 +1152,27 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      * @param _data bytes optional data to send along with the call
      * @return bool whether the call correctly returned the expected magic value
      */
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
-        private returns (bool)
-    {
-        if (!to.isContract()) {
+    function _checkOnERC721Received(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) private returns (bool) {
+        if (to.isContract()) {
+            try IERC721Receiver(to).onERC721Received(_msgSender(), from, tokenId, _data) returns (bytes4 retval) {
+                return retval == IERC721Receiver.onERC721Received.selector;
+            } catch (bytes memory reason) {
+                if (reason.length == 0) {
+                    revert("ERC721: transfer to non ERC721Receiver implementer");
+                } else {
+                    assembly {
+                        revert(add(32, reason), mload(reason))
+                    }
+                }
+            }
+        } else {
             return true;
         }
-        bytes memory returndata = to.functionCall(abi.encodeWithSelector(
-            IERC721Receiver(to).onERC721Received.selector,
-            _msgSender(),
-            from,
-            tokenId,
-            _data
-        ), "ERC721: transfer to non ERC721Receiver implementer");
-        bytes4 retval = abi.decode(returndata, (bytes4));
-        return (retval == _ERC721_RECEIVED);
-    }
-
-    /**
-     * @dev Approve `to` to operate on `tokenId`
-     *
-     * Emits an {Approval} event.
-     */
-    function _approve(address to, uint256 tokenId) internal virtual {
-        _tokenApprovals[tokenId] = to;
-        emit Approval(ERC721.ownerOf(tokenId), to, tokenId); // internal owner
     }
 
     /**
@@ -2317,1081 +1185,905 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata, IERC721Enumerable 
      * transferred to `to`.
      * - When `from` is zero, `tokenId` will be minted for `to`.
      * - When `to` is zero, ``from``'s `tokenId` will be burned.
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
+     * - `from` and `to` are never both zero.
      *
      * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
      */
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal virtual { }
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual {}
+
+    /**
+     * @dev Hook that is called after any transfer of tokens. This includes
+     * minting and burning.
+     *
+     * Calling conditions:
+     *
+     * - when `from` and `to` are both non-zero.
+     * - `from` and `to` are never both zero.
+     *
+     * To learn more about hooks, head to xref:ROOT:extending-contracts.adoc#using-hooks[Using Hooks].
+     */
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual {}
 }
 
 
-
-
-// Gotchi smart contract inherits ERC721 interface
-contract Gotchi is ERC721, Ownable {
-
-    //using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using Counters for Counters.Counter;
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    Counters.Counter private _tokenIds;
-    address public packAddress;
-    
-    mapping(string => EnumerableSet.UintSet) private _tokenIdsByType;
-
-    string[] public types;
-    Counters.Counter private _totalSupply;
-    mapping(string => bool) private typeExists;
-
-    
-    // initialize contract while deployment with contract's collection name and token
-    constructor() ERC721("Ghost Hero Item", "GHitem") {
-        _setBaseURI("https://gotchi-backend.herokuapp.com/api/file/gotchi/");
+/**
+ * @title ERC721 Burnable Token
+ * @dev ERC721 Token that can be irreversibly burned (destroyed).
+ */
+abstract contract ERC721Burnable is Context, ERC721 {
+    /**
+     * @dev Burns `tokenId`. See {ERC721-_burn}.
+     *
+     * Requirements:
+     *
+     * - The caller must own `tokenId` or be an approved operator.
+     */
+    function burn(uint256 tokenId) public virtual {
+        //solhint-disable-next-line max-line-length
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721Burnable: caller is not owner nor approved");
+        _burn(tokenId);
     }
+}
 
-    function setBaseURI(string memory _URI) external onlyOwner {
-      _setBaseURI(_URI);
-    }
-    
-    // set Pack contract address, only pack contract can mint gotchi token.
-    function setPackAddress(address _packAddr) external onlyOwner {
-        packAddress = _packAddr;
+
+/**
+ * @dev ERC721 token with storage based token URI management.
+ */
+abstract contract ERC721URIStorage is ERC721 {
+    using Strings for uint256;
+
+    // Optional mapping for token URIs
+    mapping(uint256 => string) private _tokenURIs;
+
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721URIStorage: URI query for nonexistent token");
+
+        string memory _tokenURI = _tokenURIs[tokenId];
+        string memory base = _baseURI();
+
+        // If there is no base URI, return the token URI.
+        if (bytes(base).length == 0) {
+            return _tokenURI;
+        }
+        // If both are set, concatenate the baseURI and tokenURI (via abi.encodePacked).
+        if (bytes(_tokenURI).length > 0) {
+            return string(abi.encodePacked(base, _tokenURI));
+        }
+
+        return super.tokenURI(tokenId);
     }
 
     /**
-     * @dev Throws if called by any account other than the pack contract.
+     * @dev Sets `_tokenURI` as the tokenURI of `tokenId`.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
      */
-    modifier onlyPack() {
-        require(packAddress == _msgSender(), "Ownable: caller is not the pack");
+    function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal virtual {
+        require(_exists(tokenId), "ERC721URIStorage: URI set of nonexistent token");
+        _tokenURIs[tokenId] = _tokenURI;
+    }
+
+    /**
+     * @dev Destroys `tokenId`.
+     * The approval is cleared when the token is burned.
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist.
+     *
+     * Emits a {Transfer} event.
+     */
+    function _burn(uint256 tokenId) internal virtual override {
+        super._burn(tokenId);
+
+        if (bytes(_tokenURIs[tokenId]).length != 0) {
+            delete _tokenURIs[tokenId];
+        }
+    }
+}
+
+
+/* Unik NFT-ERC721 */
+contract UnikNFT is ERC721, ERC721URIStorage, ERC721Burnable, Ownable {
+    using Counters for Counters.Counter;
+
+    Counters.Counter private _tokenIdCounter;
+
+    uint256 private royaltyFee;
+    address private royaltyRecipient;
+
+     struct Artwork{
+        address payable creator;
+        uint8 royalty;
+    }
+
+    constructor(
+        string memory _name,
+        string memory _symbol,
+        address _owner,
+        uint256 _royaltyFee,
+        address _royaltyRecipient
+    ) ERC721(_name, _symbol) {
+        require(_royaltyFee <= 10000, "can't more than 10 percent");
+        require(_royaltyRecipient != address(0), "The royalty recipient can't be 0 address");
+        royaltyFee = _royaltyFee;
+        royaltyRecipient = _royaltyRecipient;
+        transferOwnership(_owner);
+    }
+
+    function safeMint(address to, string memory uri) public onlyOwner {
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        _safeMint(to, tokenId);
+        _setTokenURI(tokenId, uri);
+    }
+
+    // The following functions are overrides required by Solidity.
+
+    function _burn(uint256 tokenId)
+        internal
+        override(ERC721, ERC721URIStorage)
+    {
+        super._burn(tokenId);
+    }
+
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    function getRoyaltyFee() external view returns (uint256) {
+        return royaltyFee;
+    }
+
+    function getRoyaltyRecipient() external view returns(address) {
+        return royaltyRecipient;
+    }
+
+    function updateRoyaltyFee(uint256 _royaltyFee) external onlyOwner {
+        require(_royaltyFee <= 10000, "can't more than 10 percent");
+        royaltyFee = _royaltyFee;
+    }
+}
+
+contract UnikNFTFactory {
+    // owner address => nft list
+    mapping(address => address[]) public nfts;
+
+    mapping(address => bool) private _unikNFT;
+
+    event CreatedNFTCollection(
+        address creator,
+        address nft
+    );
+
+    function createCollection(
+        string memory _name,
+        string memory _symbol,
+        uint256 _royaltyFee,
+        address _royaltyRecipient
+    ) external {
+        UnikNFT nft = new UnikNFT(
+            _name,
+            _symbol,
+            msg.sender,
+            _royaltyFee,
+            _royaltyRecipient
+        );
+        nfts[msg.sender].push(address(nft));
+        _unikNFT[address(nft)] = true;
+        emit CreatedNFTCollection(msg.sender, address(nft));
+    }
+
+    function importCollection(address _address) external {
+        nfts[msg.sender].push(_address);
+        _unikNFT[_address] = true;
+        emit CreatedNFTCollection(msg.sender, _address);
+    }
+
+    function getOwnCollections() external view returns (address[] memory) {
+        return nfts[msg.sender];
+    }
+
+    function isUnikNFT(address _nft) external view returns (bool) {
+        return _unikNFT[_nft];
+    }
+}
+
+interface IUnikNFTFactory {
+    function createNFTCollection(
+        string memory _name,
+        string memory _symbol,
+        uint256 _royaltyFee
+    ) external;
+
+    function isUnikNFT(address _nft) external view returns (bool);
+}
+
+interface IUnikNFT {
+    function getRoyaltyFee() external view returns (uint256);
+
+    function getRoyaltyRecipient() external view returns (address);
+}
+
+contract UnikNFTMarketplace is Ownable, ReentrancyGuard {
+    IUnikNFTFactory private immutable unikNFTFactory;
+
+    uint256 private platformFee;
+    address private feeRecipient;
+
+    struct ListNFT {
+        address nft;
+        uint256 tokenId;
+        address seller;
+        address payToken;
+        uint256 price;
+        bool sold;
+    }
+
+    struct OfferNFT {
+        address nft;
+        uint256 tokenId;
+        address offerer;
+        address payToken;
+        uint256 offerPrice;
+        bool accepted;
+    }
+
+    struct AuctionNFT {
+        address nft;
+        uint256 tokenId;
+        address creator;
+        address payToken;
+        uint256 initialPrice;
+        uint256 minBid;
+        uint256 startTime;
+        uint256 endTime;
+        address lastBidder;
+        uint256 heighestBid;
+        address winner;
+        bool success;
+    }
+
+    mapping(address => bool) private payableToken;
+    address[] private tokens;
+
+    // nft => tokenId => list struct
+    mapping(address => mapping(uint256 => ListNFT)) private listNfts;
+
+    // nft => tokenId => offerer address => offer struct
+    mapping(address => mapping(uint256 => mapping(address => OfferNFT)))
+        private offerNfts;
+
+    // nft => tokenId => acuton struct
+    mapping(address => mapping(uint256 => AuctionNFT)) private auctionNfts;
+
+    // auciton index => bidding counts => bidder address => bid price
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256)))
+        private bidPrices;
+
+    // events
+    event ListedNFT(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 price,
+        address indexed seller
+    );
+    event BoughtNFT(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 price,
+        address seller,
+        address indexed buyer
+    );
+    event OfferredNFT(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 offerPrice,
+        address indexed offerer
+    );
+    event CanceledOfferredNFT(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 offerPrice,
+        address indexed offerer
+    );
+    event AcceptedNFT(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 offerPrice,
+        address offerer,
+        address indexed nftOwner
+    );
+    event CreatedAuction(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 price,
+        uint256 minBid,
+        uint256 startTime,
+        uint256 endTime,
+        address indexed creator
+    );
+    event PlacedBid(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address payToken,
+        uint256 bidPrice,
+        address indexed bidder
+    );
+
+    event ResultedAuction(
+        address indexed nft,
+        uint256 indexed tokenId,
+        address creator,
+        address indexed winner,
+        uint256 price,
+        address caller
+    );
+
+    constructor(
+        uint256 _platformFee,
+        address _feeRecipient,
+        IUnikNFTFactory _unikNFTFactory
+    ) {
+        require(_platformFee <= 10000, "can't more than 10 percent");
+        platformFee = _platformFee;
+        feeRecipient = _feeRecipient;
+        unikNFTFactory = _unikNFTFactory;
+    }
+
+    modifier isUnikNFT(address _nft) {
+        require(unikNFTFactory.isUnikNFT(_nft), "not Unik NFT");
+        _;
+    }
+
+    modifier isListedNFT(address _nft, uint256 _tokenId) {
+        ListNFT memory listedNFT = listNfts[_nft][_tokenId];
+        require(
+            listedNFT.seller != address(0) && !listedNFT.sold,
+            "not listed"
+        );
+        _;
+    }
+
+    modifier isNotListedNFT(address _nft, uint256 _tokenId) {
+        ListNFT memory listedNFT = listNfts[_nft][_tokenId];
+        require(
+            listedNFT.seller == address(0) || listedNFT.sold,
+            "already listed"
+        );
+        _;
+    }
+
+    modifier isAuction(address _nft, uint256 _tokenId) {
+        AuctionNFT memory auction = auctionNfts[_nft][_tokenId];
+        require(
+            auction.nft != address(0) && !auction.success,
+            "auction already created"
+        );
+        _;
+    }
+
+    modifier isNotAuction(address _nft, uint256 _tokenId) {
+        AuctionNFT memory auction = auctionNfts[_nft][_tokenId];
+        require(
+            auction.nft == address(0) || auction.success,
+            "auction already created"
+        );
+        _;
+    }
+
+    modifier isOfferredNFT(
+        address _nft,
+        uint256 _tokenId,
+        address _offerer
+    ) {
+        OfferNFT memory offer = offerNfts[_nft][_tokenId][_offerer];
+        require(
+            offer.offerPrice > 0 && offer.offerer != address(0),
+            "not offerred nft"
+        );
+        _;
+    }
+
+    modifier isPayableToken(address _payToken) {
+        require(
+            _payToken != address(0) && payableToken[_payToken],
+            "invalid pay token"
+        );
         _;
     }
 
     /**
-     * @notice mint new token using token URI and type
-     * @param to account address to have the minted tokens
+     * @notice put the NFT on marketplace
+     * @param _nft specified NFT collection address
+     * @param _tokenId specified NFT id to sell
+     * @param _payToken ERC-20 token address for trading
+     * @param _price the price of NFT
      */
-    function mint(address to) external onlyPack {
-        // check if thic fucntion caller is not an zero address account
-        require(msg.sender != address(0), "Invalid account");
-        require(_tokenIds.current() != _totalSupply.current(), "Token URI is no exist");
-        
-
-        uint256 tokenId = _totalSupply.current();
-        // mint the token
-        _mint(to, tokenId);
-        _totalSupply.increment();
-    }
-
-    function setTokenURI(string memory _type) external onlyPack{
-
-        uint256 tokenId = _tokenIds.current();
-        // check if inputed type already exists.
-        if(!typeExists[_type]) {
-            typeExists[_type] = true;
-            types.push(_type);
-        }
-        // add new token id to specified type.
-        _tokenIdsByType[_type].add(tokenId);
-        // increment counter
-        _tokenIds.increment();
-    }
-
-    // burn token id
-    function burn(uint256 id_) external {
-        require(ERC721.ownerOf(id_) == msg.sender || msg.sender == packAddress, "ERC721: transfer of token that is not own"); // internal owner
-        _burn(id_);
-    }
-
-    // return all items of specified type.
-    function getItemsByType(string memory type_) public view returns(string[] memory, uint256[] memory) {
-
-        uint256 tokenCount = _tokenIdsByType[type_].length();
-        string[] memory URIs = new string[](tokenCount);
-        uint256[] memory ids = new uint256[](tokenCount);
-
-        for(uint256 i=0 ; i<tokenCount ; i++) {
-            URIs[i] = tokenURI(_tokenIdsByType[type_].at(i));
-            ids[i] = _tokenIdsByType[type_].at(i);
-        }
-
-        return (URIs, ids);
-    }
-
-    // check if the token already exists
-    function tokenExists(uint256 _tokenId) public view returns(bool) {
-        return _exists(_tokenId);
-    }
-
-    // return next token id
-    function newId() external view returns(uint256) {
-        return _tokenIds.current();
-    }
-
-    // return minted id
-    function totalSupply() public view override returns (uint256) {
-        return _totalSupply.current();
-    }
-
-    /**
-     * @notice get token URI array of specified ID array
-     * @param _ids token ID array
-     */
-    function tokenURIs(uint256[] memory _ids) external view returns(string[] memory) {
-        string[] memory _URIs = new string[](_ids.length);
-
-        for(uint256 i=0 ; i<_ids.length ; i++) {
-            _URIs[i] = tokenURI(_ids[i]);
-        }
-
-        return _URIs;
-    }
-
-    /**
-     * @notice get token ID array of holder.
-     * @param account holder address
-     */
-    function holderTokenIds(address account) public view returns(uint256[] memory) {
-        
-        uint256 count = balanceOf(account);
-        uint256[] memory ids_ = new uint256[](count);
-
-        for(uint256 i=0 ; i<count ; i++) {
-            ids_[i] = tokenOfOwnerByIndex(account, i);
-        }
-
-        return ids_;
-    }
-
-    /**
-     * @notice get token URI array of holder
-     * @param account holder address
-     */
-    function holderTokenURIs(address account) public view returns(string[] memory) {
-        
-        uint256 count = balanceOf(account);
-        uint256[] memory ids_ = holderTokenIds(account);
-        string[] memory URIs_ = new string[](count);
-
-        for(uint256 i=0 ; i<count ; i++) {
-            URIs_[i] = tokenURI(ids_[i]);
-        }
-
-        return URIs_;
-    }
-}
-
-
-// Pack smart contract inherits ERC721 interface
-contract Pack is ERC721, Ownable {
-
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using Counters for Counters.Counter;
-    using SafeMath for uint256;
-
-    Counters.Counter private _packIds;
-
-    Gotchi public gotchi;
-    IERC20 public ghstToken;
-
-    uint256 public packPrice;
-    uint256 public sterPackPrice;
-    EnumerableSet.AddressSet private _admins;
-    mapping(address => uint256) public whiteList;
-
-    mapping(uint256 => EnumerableSet.UintSet) private _tokenIdsByPack;
-    mapping(bool => EnumerableSet.UintSet) private _tokenIdsByType;
-
-    // initialize contract while deployment with contract's collection name and token
-    constructor(
-        address gotchi_,
-        IERC20 ghst_,
-        address[] memory admins_
-        ) ERC721("GOTCHI HEROES PACK", "GHP") {
-        gotchi = Gotchi(gotchi_);
-        _setBaseURI("https://gotchi-backend.herokuapp.com/api/file/pack/");
-
-        setPackPrice(5*(10**18), 15*(10**18));
-        ghstToken = ghst_;
-
-        for(uint i=0 ; i<admins_.length ; i++) {
-            _admins.add(admins_[i]);
-        }
-    }
-
-    function setGhst(IERC20 ghst_) external onlyOwner {
-        ghstToken = ghst_;
-    }
-
-    function setGotchi(address gotchi_) external onlyOwner {
-        gotchi = Gotchi(gotchi_);
-    }
-
-    function addAdmin(address admin_) external onlyOwner {
-        _admins.add(admin_);
-    }
-
-    function removeAdmin(address admin_) external onlyOwner {
-        _admins.remove(admin_);
-    }
-
-    // set token's base URI
-    function setBaseURI(string memory _URI) external onlyOwner {
-        _setBaseURI(_URI);
-    }
-
-    function addWhiteList(address _account, uint256 _amount) external onlyOwner {
-        whiteList[_account] = whiteList[_account].add(_amount);
-    }
-
-    function removeWhiteList(address _account, uint256 _amount) external onlyOwner {
-        whiteList[_account] = whiteList[_account].sub(_amount);
-    }
-
-    /**
-     * @notice set the common pack and the starter pack prices.
-     * @param _packPrice common pack price
-     * @param _starterPack starter pack price
-     */
-    function setPackPrice(uint256 _packPrice, uint256 _starterPack) public onlyOwner {
-        packPrice = _packPrice;
-        sterPackPrice = _starterPack;
-    }
-
-    /**
-     * @notice pay ghero token to mint new nfts and register new NFT's count
-     * @param count new NFT's count
-     * @param isStarterPack if it is true, it is the starter pack, has 10 NFTs
-     */
-    function mint(uint count, bool isStarterPack, bool isFree) external {
-
-        require(_tokenIdsByType[isStarterPack].length() > 0, "New token URI is no exist");
-
-        uint256 payableCount = 0;
-        if(!isFree) {
-            payableCount = count;
-        }else if(whiteList[msg.sender] > count) {
-            whiteList[msg.sender] = whiteList[msg.sender].sub(1);
-        }else if(whiteList[msg.sender] > 0 && whiteList[msg.sender] < count){
-            payableCount = count - whiteList[msg.sender];
-            whiteList[msg.sender] = 0;
-        }
-        uint256 price = packPrice * payableCount;
-        if(!isFree && isStarterPack) {
-            price = sterPackPrice;
-        }
-
-        if(price > 0) {
-            uint256 adminReward = price / _admins.length();
-            for(uint i=0 ; i<_admins.length(); i++) {
-                ghstToken.transferFrom(msg.sender, _admins.at(i), adminReward);
-            }
-        }
-        
-
-        for(uint i=0 ; i<count ; i++) {
-            uint256 tokenId = _tokenIdsByType[isStarterPack].at(0);
-            // mint the token
-            _mint(msg.sender, tokenId);
-            _tokenIdsByType[isStarterPack].remove(tokenId);
-        }
-    }
-    
-    /**
-     * @notice mint new Packs, and new NFTs and then the Pack includes NFTs
-     * @param count_ pack count
-     * @param itemTypes_ type array to mint new NFTs
-     */
-    function setTokenURI(
-        bool isStarter_,
-        uint256 count_,
-        string[] calldata itemTypes_) external onlyOwner {
-        // check if thic fucntion caller is not an zero address account
-        require(itemTypes_.length.mod(5) == 0, "A pack should include 5 items");
-
-        for(uint pId=0 ; pId<count_ ; pId++){
-        
-            uint256 tokenId = _packIds.current();
-
-            // set token URI (bind token id with the passed in token URI)
-            _tokenIdsByType[isStarter_].add(tokenId);
-            uint unit = 5;
-            if(isStarter_) {
-                unit = 10;
-            }
-
-            for(uint i=0 ; i<unit ; i++) {
-                gotchi.setTokenURI(itemTypes_[pId*unit + i]);
-                uint256 gotchiId = gotchi.newId();
-                _tokenIdsByPack[tokenId].add(gotchiId - 1);
-            }
-            _packIds.increment();
-        }
-
-    }
-
-    function availableCounts() public view returns(uint256, uint256) {
-        return (_tokenIdsByType[true].length(), _tokenIdsByType[false].length());
-    }
-
-    /**
-     * @notice burn pack and then transfer gochi tokens to pack's owner.
-     * @param packId_ Pack NFT id to burn
-     */
-    function openPack(uint256 packId_) external {
-        require(ownerOf(packId_) == msg.sender, "This pack is no yours");
-        uint256[] memory tokenIds = getIdsByPack(packId_);
-
-        for(uint i=0 ; i<tokenIds.length ; i++) {
-
-            gotchi.approve(msg.sender, tokenIds[i]);
-            gotchi.transferFrom(address(this), msg.sender, tokenIds[i]);
-        }
-        delete _tokenIdsByPack[packId_];
-        
-        _burn(packId_);
-
-    }
-
-    function burn(uint256 id_) external {
-        require(ERC721.ownerOf(id_) == msg.sender || msg.sender == owner(), "ERC721: transfer of token that is not own"); // internal owner
-
-        delete _tokenIdsByPack[id_];
-        _burn(id_);
-    }
-
-    /**
-     * @notice get NFT id array that current pack includes
-     * @param id_ pack id
-     */
-    function getIdsByPack(uint256 id_) public view returns(uint256[] memory) {
-
-        uint256 tokenCount = _tokenIdsByPack[id_].length();
-        uint256[] memory ids = new uint256[](tokenCount);
-
-        for(uint256 i=0 ; i<tokenCount ; i++) {
-            ids[i] = _tokenIdsByPack[id_].at(i);
-        }
-
-        return ids;
-    }
-
-    /**
-     * @notice check if the token already exists
-     * @param id_ token id for checking the exist
-     */
-    function packExists(uint256 id_) public view returns(bool) {
-        return _exists(id_);
-    }
-
-    /**
-     * @notice get next token id
-     */
-    function newId() public view returns(uint256) {
-        return _packIds.current();
-    }
-
-    /**
-     * @notice get token URI array of token id array
-     * @param _ids token id array
-     */
-    function tokenURIs(uint256[] calldata _ids) external view returns(string[] memory) {
-        string[] memory _URIs = new string[](_ids.length);
-
-        for(uint256 i=0 ; i<_ids.length ; i++) {
-            _URIs[i] = tokenURI(_ids[i]);
-        }
-
-        return _URIs;
-    }
-    
-    /**
-     * @notice get all token id array of account
-     * @param account holder address
-     */
-    function holderTokenIds(address account) public view returns(uint256[] memory) {
-        
-        uint256 count = balanceOf(account);
-        uint256[] memory ids_ = new uint256[](count);
-
-        for(uint256 i=0 ; i<count ; i++) {
-            ids_[i] = tokenOfOwnerByIndex(account, i);
-        }
-
-        return ids_;
-    }
-
-    /**
-     * @notice get all token URI array of account
-     * @param account holder address
-     */
-    function holderTokenURIs(address account) public view returns(string[] memory) {
-
-        uint256 count = balanceOf(account);
-        uint256[] memory ids_ = holderTokenIds(account);
-        string[] memory URIs_ = new string[](count);
-
-        for(uint256 i=0 ; i<count ; i++) {
-            URIs_[i] = tokenURI(ids_[i]);
-        }
-
-        return URIs_;
-    }
-
-}
-
-// Marketplace smart contract inherits ERC721 interface
-contract Marketplace is ReentrancyGuard, ERC721Holder, Ownable {
-
-    using Counters for Counters.Counter;
-    using SafeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.UintSet;
-    using EnumerableSet for EnumerableSet.AddressSet;
-
-    EnumerableSet.AddressSet private _admins;
-    EnumerableSet.AddressSet private _devs;
-
-    uint256 public adminTrandingFee; // admin fee(10 = 1%, 100 = 10%)
-    uint256 public devTrandingFee;  // developer fee(10 = 1%, 100 = 10%)
-
-    struct Item {
-        uint256 price;
-        address seller;
-        uint256 createdAt;
-    }
-
-    struct Collection {
-        uint256 collectionId;
-        string name;
-        uint256 tradingFee; // trading fee (100 = 1%, 500 = 5%, 5 = 0.05%)
-    }
-
-    // this contract's token collection name
-    string public name;
-    // this contract's token symbol
-    string public symbol;
-    string private _baseURI;
-
-    IERC20 private _ghero;  // token(GHERO) to trade the items/packs.
-
-    Counters.Counter private _collectionIds;
-    EnumerableSet.AddressSet private _collectionAddressSet;
-
-    mapping(string => bool) private _typeExists;
-    string[] private _types;
-    mapping(string => EnumerableSet.UintSet) _tokenIdsByType;
-
-    mapping(address => mapping(uint256 => Item)) private _itemDetails; // Item details (price + seller address) for a given collection and a tokenId
-    mapping(address => EnumerableSet.UintSet) private _itemTokenIds; // Set of tokenIds for a collection
-    mapping(address => Collection) private _collections; // Details about the collections
-    mapping(address => mapping(address => EnumerableSet.UintSet)) private _tokenIdsOfSeller;
-
-    // Item order is cancelled
-    event ItemCancel(
-        address indexed collection,
-        address indexed seller,
-        uint256 indexed tokenId
-    );
-
-    // Item order is created
-    event ItemNew(
-        address indexed collection,
-        address indexed seller,
-        uint256 indexed tokenId,
-        uint256 itemPrice
-    );
-
-    // Item order is updated
-    event ItemUpdate(
-        address indexed collection,
-        address indexed seller,
-        uint256 indexed tokenId,
-        uint256 itemPrice
-    );
-
-    // Collection is closed for trading and new listings
-    event packBurned(uint256 indexed packId);
-
-    // New collection is added
-    event packNew(
-        string indexed name,
-        address indexed creator,
-        uint256 tradingFee,
-        uint256 creatorFee
-    );
-    
-   // New collection is added
-    event CollectionNew(
-        address indexed collection,
-        string name,
-        uint256 tradingFee
-    );
-
-    // Existing collection is updated
-    event CollectionUpdate(
-        address indexed collection,
-        string name,
-        uint256 tradingFee
-    );
-    // Pending revenue is claimed
-    event RevenueClaim(address indexed claimer, uint256 amount);
-
-  
-    // Item order is matched by a trade
-    event Trade(
-        address indexed collection,
-        uint256 indexed tokenId,
-        address indexed seller,
-        address buyer,
-        uint256 itemPrice,
-        uint256 netPrice,
-        bool withBNB
-    );
-  
-    constructor(address _gotchiAddr, address _packAddr, address ghero_, address[] memory admins_, address[] memory devs_) {
-        _ghero = IERC20(ghero_);
-        addCollection("Gotchi Collection", _gotchiAddr, 500);
-        addCollection("Pack Collection", _packAddr, 500);
-
-        for(uint i=0 ; i<admins_.length ; i++) {
-            _admins.add(admins_[i]);
-        }
-
-        for(uint i=0 ; i<devs_.length ; i++) {
-            _devs.add(devs_[i]);
-        }
-
-        _admins.add(owner());
-        devTrandingFee = 600;
-        adminTrandingFee = 400;
-    }
-
-    /**
-     * @notice set ERC-20 token address to mint new NFT
-     * @param ghero_ minting token address
-     */
-    function setGhero(IERC20 ghero_) external onlyOwner {
-        require(ghero_ != _ghero, "ERROR: The same token already setted.");
-        _ghero = IERC20(ghero_);
-    }
-
-    /**
-     * @notice set percent of trading fee for admins and developers
-     * @param _adminFee percent for all admins in whole trading fee
-     * @param _devFee percent for all developers in whole trading fee
-     */
-    function setTradingFees(uint _adminFee, uint _devFee) external onlyOwner {
-        devTrandingFee = _devFee;
-        adminTrandingFee = _adminFee;
-    }
-
-    /**
-     * @notice add one account to admin list for getting trading fee
-     * @param _admin account address
-     */
-    function addAdmin(address _admin) external onlyOwner {
-        _admins.add(_admin);
-    }
-
-    /**
-     * @notice remove one account in admin list for getting trading fee
-     * @param _admin account address
-     */
-    function removeAdmin(address _admin) external onlyOwner {
-        _admins.remove(_admin);
-    }
-
-    /** 
-     * @notice add one account to developer list for getting trading fee.
-     * @param _dev account address
-     */
-    function addDev(address _dev) external onlyOwner {
-        _devs.add(_dev);
-    }
-
-    /** 
-     * @notice remove one address in developer list for trading fee.
-     * @param _dev account address
-     */
-    function removeDev(address _dev) external onlyOwner {
-        _devs.remove(_dev);
-    }
-
-    /**
-     * @notice Create item order
-     * @param _collection: contract address of the NFT
-     * @param _tokenId: token Id for sell
-     * @param _itemPrice: token price price for sell
-     * @param _type: token type
-     */
-    function createItemOrder(
-        address _collection,
+    function createSell(
+        address _nft,
         uint256 _tokenId,
-        uint256 _itemPrice,
-        string calldata _type
-    ) external nonReentrant {
+        address _payToken,
+        uint256 _price
+    ) external isUnikNFT(_nft) isPayableToken(_payToken) {
+        IERC721 nft = IERC721(_nft);
+        require(nft.ownerOf(_tokenId) == msg.sender, "not nft owner");
+        nft.transferFrom(msg.sender, address(this), _tokenId);
 
-        // Transfer NFT to this contract
-        IERC721(_collection).safeTransferFrom(
-            address(msg.sender),
-            address(this),
-            _tokenId
-        );
-
-        if(!compareStrings(_type, "type-pack")) {
-            if(!_typeExists[_type]) {
-                _types.push(_type);
-                _typeExists[_type] = true;
-            }
-            _tokenIdsByType[_type].add(_tokenId);
-        }
-
-        // Adjust the information
-        _tokenIdsOfSeller[msg.sender][_collection].add(_tokenId);
-        
-        _itemDetails[_collection][_tokenId] = Item({
+        listNfts[_nft][_tokenId] = ListNFT({
+            nft: _nft,
+            tokenId: _tokenId,
             seller: msg.sender,
-            price: _itemPrice,
-            createdAt: block.timestamp
+            payToken: _payToken,
+            price: _price,
+            sold: false
         });
 
-        // Add tokenId to the itemTokenIds set
-        _itemTokenIds[_collection].add(_tokenId);
-
-        // Emit event
-        emit ItemNew(_collection, msg.sender, _tokenId, _itemPrice);
+        emit ListedNFT(_nft, _tokenId, _payToken, _price, msg.sender);
     }
-    
+
     /**
-     * @notice Cancel existing item order
-     * @param _collection: contract address of the NFT
-     * @param _type: type of the NFT
-     * @param _tokenId: tokenId of the NFT
+     * @notice cancel listed NFT from marketplace
+     * @param _nft NFT collection address to sell
+     * @param _tokenId specified NFT id to sell
      */
-    function cancelItemOrder(
-        address _collection, 
-        string calldata _type, 
-        uint256 _tokenId)
+    function cancelListedNFT(address _nft, uint256 _tokenId)
         external
-        nonReentrant
+        isListedNFT(_nft, _tokenId)
     {
-        // Verify the sender has listed it
-        require(
-            _tokenIdsOfSeller[msg.sender][_collection].contains(
-                _tokenId
-            ),
-            "Order: Token not listed"
-        );
-
-        if(!compareStrings(_type, "type-pack")) {
-            require(_typeExists[_type], "This type does not exists");
-            _tokenIdsByType[_type].remove(_tokenId);
-        }
-
-        // Adjust the information
-        _tokenIdsOfSeller[msg.sender][_collection].remove(
-            _tokenId
-        );
-
-        delete _itemDetails[_collection][_tokenId];
-
-        // Add tokenId to the itemTokenIds set
-        _itemTokenIds[_collection].remove(_tokenId);
-
-        // Transfer the NFT back to the user
-        IERC721(_collection).transferFrom(
-            address(this),
-            address(msg.sender),
-            _tokenId
-        );
-
-        // Emit event
-        emit ItemCancel(_collection, msg.sender, _tokenId);
+        ListNFT memory listedNFT = listNfts[_nft][_tokenId];
+        require(listedNFT.seller == msg.sender, "not listed owner");
+        IERC721(_nft).transferFrom(address(this), msg.sender, _tokenId);
+        delete listNfts[_nft][_tokenId];
     }
 
     /**
-     * @notice Modify existing item order
-     * @param _collection: contract address of the NFT
-     * @param _tokenId: tokenId of the NFT
-     * @param _newPrice: new price for listing (in wei)
+     * @notice buy a NFT from marketplace
+     * @param _nft NFT collection address to buy
+     * @param _tokenId specified NFT id to buy
+     * @param _payToken ERC-20 token address for trading
+     * @param _price NFT price
      */
-    function modifyItemOrder(
-        address _collection,
+    function buy(
+        address _nft,
         uint256 _tokenId,
-        uint256 _newPrice
-    ) external nonReentrant {
-
-        Item storage selItem = _itemDetails[_collection][_tokenId];
-        require(selItem.seller == msg.sender, "Token owner error.");
-        selItem.price = _newPrice;
-        // Emit event
-        emit ItemUpdate(_collection, msg.sender, _tokenId, _newPrice);
-    }
-
-    /**
-     * @notice Add a new collection
-     * @param _name: collection name
-     * @param _collection: collection address
-     * @param _tradingFee: trading fee (100 = 1%, 500 = 5%, 5 = 0.05%)
-     * @dev Callable by admin
-     */
-    function addCollection(
-        string memory _name,
-        address _collection,
-        uint256 _tradingFee
-    ) public onlyOwner {
+        address _payToken,
+        uint256 _price
+    ) external isListedNFT(_nft, _tokenId) {
+        ListNFT storage listedNft = listNfts[_nft][_tokenId];
         require(
-            !_collectionAddressSet.remove(_collection),
-            "Operations: Collection already listed"
+            _payToken != address(0) && _payToken == listedNft.payToken,
+            "invalid pay token"
         );
-        require(
-            IERC721(_collection).supportsInterface(0x80ac58cd),
-            "Operations: Not ERC721"
-        );
+        require(!listedNft.sold, "nft already sold");
+        require(_price >= listedNft.price, "invalid price");
 
-        _collectionAddressSet.add(_collection);
+        listedNft.sold = true;
 
-        uint256 _collectionId =  _collectionIds.current();
+        uint256 totalPrice = _price;
+        IUnikNFT nft = IUnikNFT(listedNft.nft);
+        address royaltyRecipient = nft.getRoyaltyRecipient();
+        uint256 royaltyFee = nft.getRoyaltyFee();
 
-        _collections[_collection] = Collection({
-            collectionId: _collectionId,
-            name : _name,
-            tradingFee: _tradingFee
-        });
-        _collectionIds.increment();
+        if (royaltyFee > 0) {
+            uint256 royaltyTotal = calculateRoyalty(royaltyFee, _price);
 
-        emit CollectionNew(_collection, _name, _tradingFee);
-
-    }
-    
-    /**
-     * @notice Modify collection characteristics
-     * @param _id: collection id
-     * @param _collection: collection address
-     * @param _name: collection name
-     * @param _tradingFee: trading fee (100 = 1%, 500 = 5%, 5 = 0.05%)
-     * @dev Callable by admin
-     */
-    function modifyCollection(
-        uint256 _id,
-        address _collection,
-        string calldata _name,
-        uint256 _tradingFee
-    ) external onlyOwner {
-        require(
-            _collectionAddressSet.contains(_collection),
-            "Operations: Collection not listed"
-        );
-
-        address originalAddr = _collectionAddressSet.at(_id);
-        Collection memory originalCollection = _collections[originalAddr];
-      
-        _collections[_collection] = Collection({
-            collectionId : originalCollection.collectionId,
-            name: _name,
-            tradingFee: _tradingFee
-        });
-
-        emit CollectionUpdate(
-            _collection,
-            _name,
-            _tradingFee
-        );
-    }
-
-   
-    /**
-     * @notice Buy token with WBNB by matching the price of an existing item order
-     * @param _collection: contract address of the NFT
-     * @param _tokenId: tokenId of the NFT purchased
-     * @param _price: price (must be equal to the itemPrice set by the seller)
-     * @param _type: type
-     */
-    function buyToken(
-        address _collection,
-        uint256 _tokenId,
-        uint256 _price,
-        string calldata _type
-    ) external nonReentrant {
-        
-        require(
-            _itemTokenIds[_collection].contains(_tokenId),
-            "Buy: Not for sale"
-        );
-
-        Item memory itemOrder = _itemDetails[_collection][_tokenId];
-
-        // Front-running protection
-        require(_price == itemOrder.price, "Buy: Incorrect price");
-        require(msg.sender != itemOrder.seller, "Buy: Buyer cannot be seller");
-
-        if(!compareStrings(_type, "type-pack")) {
-            if(_typeExists[_type]) {
-            _tokenIdsByType[_type].remove(_tokenId);
-            }
-        }
-
-        // Calculate the net price (collected by seller), trading fee (collected by treasury), creator fee (collected by creator)
-        (
-            uint256 netPrice,
-            uint256 tradingFee
-        ) = _calculatePriceAndFees(_collection, _price);
-
-        if(tradingFee > 0) {
-
-            uint256 devReward = tradingFee * devTrandingFee / 1000 / _devs.length();
-
-            uint256 adminReward = tradingFee * adminTrandingFee / 1000 / _admins.length();
-
-            for(uint i=0 ; i<_admins.length(); i++) {
-                _ghero.safeTransferFrom(msg.sender, _admins.at(i), adminReward);
-            }
-
-            for(uint i=0 ; i<_devs.length(); i++) {
-                _ghero.safeTransferFrom(msg.sender, _devs.at(i), devReward);
-            }
-        }
-        _ghero.safeTransferFrom(msg.sender, itemOrder.seller, netPrice);
-        
-        _tokenIdsOfSeller[itemOrder.seller][_collection].remove(
-            _tokenId
-        );
-
-        _itemTokenIds[_collection].remove(_tokenId);
-
-        
-        delete _itemDetails[_collection][_tokenId];
-        
-        // Transfer NFT to buyer
-        IERC721(_collection).safeTransferFrom(
-            address(this),
-            address(msg.sender),
-            _tokenId
-        );
-
-        // Emit event
-        emit Trade(
-            _collection,
-            _tokenId,
-            itemOrder.seller,
-            msg.sender,
-            _price,
-            netPrice,
-            false
-        );
-    }
-
-        
-    /** 
-     * @notice Set token base URI for hosting domain.
-     * @param _URI hosting domain
-     */
-    function setBaseURI(string calldata _URI) external onlyOwner {
-        _baseURI = _URI;
-    }
-  
-    /**
-     * @notice Calculate price and associated fees for a collection
-     * @param _collection: address of the collection
-     * @param _itemPrice: listed price
-     */
-    function _calculatePriceAndFees(
-        address _collection,
-        uint256 _itemPrice
-    )
-        internal
-        view
-        returns (
-            uint256 netPrice,
-            uint256 tradingFee
-        )
-    {
-        tradingFee = (_itemPrice * _collections[_collection].tradingFee) / 10000;
-
-        netPrice = _itemPrice - tradingFee;
-
-        return (netPrice, tradingFee);
-    }
-
-    function viewItemsByType(string calldata _type) external view returns(uint256[] memory, string[] memory, Item[] memory) {
-        uint256 itemCount = _tokenIdsByType[_type].length();
-        Item[] memory items_ = new Item[](itemCount);
-        uint256[] memory ids_ = new uint256[](itemCount);
-        string[] memory URIs_ = new string[](itemCount);
-        for(uint256 i=0 ; i<itemCount ; i++) {
-            items_[i] = _itemDetails[_collectionAddressSet.at(0)][_tokenIdsByType[_type].at(i)];
-            URIs_[i] = IERC721Metadata(_collectionAddressSet.at(0)).tokenURI(_tokenIdsByType[_type].at(i));
-            ids_[i] = _tokenIdsByType[_type].at(i);
-        }
-        return (ids_, URIs_, items_);
-    }
-
-    /**
-     * @notice Check items for an array of tokenIds in a collection
-     * @param collection: address of the collection
-     * @param tokenIds: array of tokenId
-     */
-    function viewItemsByCollectionAndTokenIds(
-        address collection,
-        uint256[] calldata tokenIds
-    ) external view returns (bool[] memory statuses, Item[] memory itemInfo) {
-        uint256 length = tokenIds.length;
-
-        statuses = new bool[](length);
-        itemInfo = new Item[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            if (_itemTokenIds[collection].contains(tokenIds[i])) {
-                statuses[i] = true;
-            } else {
-                statuses[i] = false;
-            }
-
-            itemInfo[i] = _itemDetails[collection][tokenIds[i]];
-        }
-
-        return (statuses, itemInfo);
-    }
-
-    /**
-    * @notice return order item detail
-    * @param _collection collection address
-    * @param _tokenId token id
-    */
-    function viewItemByCollectionAndTokenId(
-        address _collection,
-        uint256 _tokenId
-    ) external view returns(bool status, Item memory itemInfo){
-        if (_itemTokenIds[_collection].contains(_tokenId)) {
-            status = true;
-        } else {
-            status = false;
-        }
-        itemInfo = _itemDetails[_collection][_tokenId];
-    }
-
-    /**
-     * @notice View item orders for a given collection across all sellers
-     * @param collection: address of the collection
-     */
-    function viewItemsByCollection(
-        address collection
-    )
-        external
-        view
-        returns (
-            uint256[] memory tokenIds,
-            string[] memory tokenURIs,
-            Item[] memory itemInfo
-        )
-    {
-        uint256 length = _itemTokenIds[collection].length();
-
-        tokenIds = new uint256[](length);
-        itemInfo = new Item[](length);
-        tokenURIs = new string[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            tokenIds[i] = _itemTokenIds[collection].at(i);
-            itemInfo[i] = _itemDetails[collection][tokenIds[i]];
-            tokenURIs[i] = IERC721Metadata(collection).tokenURI(tokenIds[i]);
-        }
-
-        return (tokenIds, tokenURIs, itemInfo);
-    }
-
-    /**
-     * @notice View item orders for a given collection and a seller
-     * @param collection: address of the collection
-     * @param seller: address of the seller
-     
-     */
-    function viewItemsByCollectionAndSeller(
-        address collection,
-        address seller
-    )
-        external
-        view
-        returns (
-            uint256[] memory tokenIds,
-            string[] memory tokenURIs,
-            Item[] memory itemInfo
-        )
-    {
-        uint256 length =  _tokenIdsOfSeller[seller][collection].length();
-
-        tokenIds = new uint256[](length);
-        tokenURIs = new string[](length);
-        itemInfo = new Item[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            tokenIds[i] = _tokenIdsOfSeller[seller][collection].at(
-                i
+            // Transfer royalty fee to collection owner
+            IERC20(listedNft.payToken).transferFrom(
+                msg.sender,
+                royaltyRecipient,
+                royaltyTotal
             );
-            itemInfo[i] = _itemDetails[collection][tokenIds[i]];
-            tokenURIs[i] = IERC721Metadata(collection).tokenURI(tokenIds[i]);
+            totalPrice -= royaltyTotal;
         }
 
-        return (tokenIds, tokenURIs, itemInfo);
+        // Calculate & Transfer platfrom fee
+        uint256 platformFeeTotal = calculatePlatformFee(_price);
+        IERC20(listedNft.payToken).transferFrom(
+            msg.sender,
+            feeRecipient,
+            platformFeeTotal
+        );
+
+        // Transfer to nft owner
+        IERC20(listedNft.payToken).transferFrom(
+            msg.sender,
+            listedNft.seller,
+            totalPrice - platformFeeTotal
+        );
+
+        // Transfer NFT to buyer
+        IERC721(listedNft.nft).safeTransferFrom(
+            address(this),
+            msg.sender,
+            listedNft.tokenId
+        );
+
+        emit BoughtNFT(
+            listedNft.nft,
+            listedNft.tokenId,
+            listedNft.payToken,
+            _price,
+            listedNft.seller,
+            msg.sender
+        );
     }
 
-    // return all collections
-    function viewCollections()
+    // @notice Offer listed NFT
+    function makeOffer(
+        address _nft,
+        uint256 _tokenId,
+        address _payToken,
+        uint256 _offerPrice
+    ) external isListedNFT(_nft, _tokenId) {
+        require(_offerPrice > 0, "price can not 0");
+
+        ListNFT memory nft = listNfts[_nft][_tokenId];
+        IERC20(nft.payToken).transferFrom(
+            msg.sender,
+            address(this),
+            _offerPrice
+        );
+
+        offerNfts[_nft][_tokenId][msg.sender] = OfferNFT({
+            nft: nft.nft,
+            tokenId: nft.tokenId,
+            offerer: msg.sender,
+            payToken: _payToken,
+            offerPrice: _offerPrice,
+            accepted: false
+        });
+
+        emit OfferredNFT(
+            nft.nft,
+            nft.tokenId,
+            nft.payToken,
+            _offerPrice,
+            msg.sender
+        );
+    }
+
+    /**
+     * @notice cancel the made offer 
+     * @param _nft NFT collection address to buy
+     * @param _tokenId NFT id to buy
+     */
+    function cancelOffer(address _nft, uint256 _tokenId)
+        external
+        isOfferredNFT(_nft, _tokenId, msg.sender)
+    {
+        OfferNFT memory offer = offerNfts[_nft][_tokenId][msg.sender];
+        require(offer.offerer == msg.sender, "not offerer");
+        require(!offer.accepted, "offer already accepted");
+        delete offerNfts[_nft][_tokenId][msg.sender];
+        IERC20(offer.payToken).transfer(offer.offerer, offer.offerPrice);
+        emit CanceledOfferredNFT(
+            offer.nft,
+            offer.tokenId,
+            offer.payToken,
+            offer.offerPrice,
+            msg.sender
+        );
+    }
+
+    /**
+     * @notice listed NFT owner accept offerring
+     * @param _nft NFT collection address
+     * @param _tokenId NFT id
+     * @param _offerer the user address that created this offer
+     */
+    function acceptOfferNFT(
+        address _nft,
+        uint256 _tokenId,
+        address _offerer
+    )
+        external
+        isOfferredNFT(_nft, _tokenId, _offerer)
+        isListedNFT(_nft, _tokenId)
+    {
+        require(
+            listNfts[_nft][_tokenId].seller == msg.sender,
+            "not listed owner"
+        );
+        OfferNFT storage offer = offerNfts[_nft][_tokenId][_offerer];
+        ListNFT storage list = listNfts[offer.nft][offer.tokenId];
+        require(!list.sold, "already sold");
+        require(!offer.accepted, "offer already accepted");
+
+        list.sold = true;
+        offer.accepted = true;
+
+        uint256 offerPrice = offer.offerPrice;
+        uint256 totalPrice = offerPrice;
+
+        IUnikNFT nft = IUnikNFT(offer.nft);
+        address royaltyRecipient = nft.getRoyaltyRecipient();
+        uint256 royaltyFee = nft.getRoyaltyFee();
+
+        IERC20 payToken = IERC20(offer.payToken);
+
+        if (royaltyFee > 0) {
+            uint256 royaltyTotal = calculateRoyalty(royaltyFee, offerPrice);
+
+            // Transfer royalty fee to collection owner
+            payToken.transfer(royaltyRecipient, royaltyTotal);
+            totalPrice -= royaltyTotal;
+        }
+
+        // Calculate & Transfer platfrom fee
+        uint256 platformFeeTotal = calculatePlatformFee(offerPrice);
+        payToken.transfer(feeRecipient, platformFeeTotal);
+
+        // Transfer to seller
+        payToken.transfer(list.seller, totalPrice - platformFeeTotal);
+
+        // Transfer NFT to offerer
+        IERC721(list.nft).safeTransferFrom(
+            address(this),
+            offer.offerer,
+            list.tokenId
+        );
+
+        emit AcceptedNFT(
+            offer.nft,
+            offer.tokenId,
+            offer.payToken,
+            offer.offerPrice,
+            offer.offerer,
+            list.seller
+        );
+    }
+
+    /**
+     * @notice create a auction to buy
+     * @param _nft NFT collection address
+     * @param _tokenId NFT id
+     * @param _payToken ERC-20 token address for trading
+     * @param _price NFT price
+     * @param _minBid minimum bid price
+     * @param _startTime the time to start bid.
+     * @param _endTime the time to end bid and NFT is transfered to max bider.
+     */
+    function createAuction(
+        address _nft,
+        uint256 _tokenId,
+        address _payToken,
+        uint256 _price,
+        uint256 _minBid,
+        uint256 _startTime,
+        uint256 _endTime
+    ) external isPayableToken(_payToken) isNotAuction(_nft, _tokenId) {
+        IERC721 nft = IERC721(_nft);
+        require(nft.ownerOf(_tokenId) == msg.sender, "not nft owner");
+        require(_endTime > _startTime, "invalid end time");
+
+        nft.transferFrom(msg.sender, address(this), _tokenId);
+
+        auctionNfts[_nft][_tokenId] = AuctionNFT({
+            nft: _nft,
+            tokenId: _tokenId,
+            creator: msg.sender,
+            payToken: _payToken,
+            initialPrice: _price,
+            minBid: _minBid,
+            startTime: _startTime,
+            endTime: _endTime,
+            lastBidder: address(0),
+            heighestBid: _price,
+            winner: address(0),
+            success: false
+        });
+
+        emit CreatedAuction(
+            _nft,
+            _tokenId,
+            _payToken,
+            _price,
+            _minBid,
+            _startTime,
+            _endTime,
+            msg.sender
+        );
+    }
+
+    /**
+     * @notice cancel the auction to buy
+     * @param _nft NFT collection address
+     * @param _tokenId NFT id
+     */
+    function cancelAuction(address _nft, uint256 _tokenId)
+        external
+        isAuction(_nft, _tokenId)
+    {
+        AuctionNFT memory auction = auctionNfts[_nft][_tokenId];
+        require(auction.creator == msg.sender, "not auction creator");
+        require(block.timestamp < auction.startTime, "auction already started");
+        require(auction.lastBidder == address(0), "already have bidder");
+
+        IERC721 nft = IERC721(_nft);
+        nft.transferFrom(address(this), msg.sender, _tokenId);
+        delete auctionNfts[_nft][_tokenId];
+    }
+
+    /**
+     * @notice Bid place auction
+     * @param _nft NFT collection address
+     * @param _tokenId NFT id
+     * @param _bidPrice bid price
+     */
+    function placeBid(
+        address _nft,
+        uint256 _tokenId,
+        uint256 _bidPrice
+    ) external isAuction(_nft, _tokenId) {
+        require(
+            block.timestamp >= auctionNfts[_nft][_tokenId].startTime,
+            "auction not start"
+        );
+        require(
+            block.timestamp <= auctionNfts[_nft][_tokenId].endTime,
+            "auction ended"
+        );
+        require(
+            _bidPrice >=
+                auctionNfts[_nft][_tokenId].heighestBid +
+                    auctionNfts[_nft][_tokenId].minBid,
+            "less than min bid price"
+        );
+
+        AuctionNFT storage auction = auctionNfts[_nft][_tokenId];
+        IERC20 payToken = IERC20(auction.payToken);
+        payToken.transferFrom(msg.sender, address(this), _bidPrice);
+
+        if (auction.lastBidder != address(0)) {
+            address lastBidder = auction.lastBidder;
+            uint256 lastBidPrice = auction.heighestBid;
+
+            // Transfer back to last bidder
+            payToken.transfer(lastBidder, lastBidPrice);
+        }
+
+        // Set new heighest bid price
+        auction.lastBidder = msg.sender;
+        auction.heighestBid = _bidPrice;
+
+        emit PlacedBid(_nft, _tokenId, auction.payToken, _bidPrice, msg.sender);
+    }
+
+    /**
+     * @notice complete auction, can call by auction creator, heighest bidder, or marketplace owner only!
+     * @param _nft NFT collection address
+     * @param _tokenId NFT id
+     */
+    function completeBid(address _nft, uint256 _tokenId) external {
+        require(!auctionNfts[_nft][_tokenId].success, "already resulted");
+        require(
+            msg.sender == owner() ||
+                msg.sender == auctionNfts[_nft][_tokenId].creator ||
+                msg.sender == auctionNfts[_nft][_tokenId].lastBidder,
+            "not creator, winner, or owner"
+        );
+        require(
+            block.timestamp > auctionNfts[_nft][_tokenId].endTime,
+            "auction not ended"
+        );
+
+        AuctionNFT storage auction = auctionNfts[_nft][_tokenId];
+        IERC20 payToken = IERC20(auction.payToken);
+        IERC721 nft = IERC721(auction.nft);
+
+        auction.success = true;
+        auction.winner = auction.creator;
+
+        IUnikNFT UnikNft = IUnikNFT(_nft);
+        address royaltyRecipient = UnikNft.getRoyaltyRecipient();
+        uint256 royaltyFee = UnikNft.getRoyaltyFee();
+
+        uint256 heighestBid = auction.heighestBid;
+        uint256 totalPrice = heighestBid;
+
+        if (royaltyFee > 0) {
+            uint256 royaltyTotal = calculateRoyalty(royaltyFee, heighestBid);
+
+            // Transfer royalty fee to collection owner
+            payToken.transfer(royaltyRecipient, royaltyTotal);
+            totalPrice -= royaltyTotal;
+        }
+
+        // Calculate & Transfer platfrom fee
+        uint256 platformFeeTotal = calculatePlatformFee(heighestBid);
+        payToken.transfer(feeRecipient, platformFeeTotal);
+
+        // Transfer to auction creator
+        payToken.transfer(auction.creator, totalPrice - platformFeeTotal);
+
+        // Transfer NFT to the winner
+        nft.transferFrom(address(this), auction.lastBidder, auction.tokenId);
+
+        emit ResultedAuction(
+            _nft,
+            _tokenId,
+            auction.creator,
+            auction.lastBidder,
+            auction.heighestBid,
+            msg.sender
+        );
+    }
+
+    function calculatePlatformFee(uint256 _price)
+        public
+        view
+        returns (uint256)
+    {
+        return (_price * platformFee) / 10000;
+    }
+
+    function calculateRoyalty(uint256 _royalty, uint256 _price)
+        public
+        pure
+        returns (uint256)
+    {
+        return (_price * _royalty) / 10000;
+    }
+
+    function getListedNFT(address _nft, uint256 _tokenId)
+        public
+        view
+        returns (ListNFT memory)
+    {
+        return listNfts[_nft][_tokenId];
+    }
+
+    function getPayableTokens() external view returns (address[] memory) {
+        return tokens;
+    }
+
+    function checkIsPayableToken(address _payableToken)
         external
         view
-        returns (
-            address[] memory collectionAddresses,
-            Collection[] memory collectionDetails
-            
-        )
+        returns (bool)
     {
-        uint256 length = _collectionAddressSet.length();
-
-        
-
-        collectionAddresses = new address[](length);
-        collectionDetails = new Collection[](length);
-
-        for (uint256 i = 0; i < length; i++) {
-            collectionAddresses[i] = _collectionAddressSet.at( i);
-            collectionDetails[i] = _collections[collectionAddresses[i]];
-        }
-
-        return (collectionAddresses, collectionDetails);
+        return payableToken[_payableToken];
     }
 
-    function admins() external view returns(address[] memory ) {
-        address[] memory admins_ = new address[](_admins.length());
-        for(uint i=0 ; i<_admins.length() ; i++) {
-            admins_[i] = _admins.at(i);
-        }
-        return admins_;
+    function addPayableToken(address _token) external onlyOwner {
+        require(_token != address(0), "invalid token");
+        require(!payableToken[_token], "already payable token");
+        payableToken[_token] = true;
+        tokens.push(_token);
     }
 
-    function devs() external view returns(address[] memory) {
-        address[] memory devs_ = new address[](_devs.length());
-        for(uint i=0 ; i<_devs.length() ; i++) {
-            devs_[i] = _devs.at(i);
-        }
-        return devs_;
+    function updatePlatformFee(uint256 _platformFee) external onlyOwner {
+        require(_platformFee <= 10000, "can't more than 10 percent");
+        platformFee = _platformFee;
     }
 
-    function compareStrings(string memory a, string memory b) public pure returns (bool) {
-        return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
+    function changeFeeRecipient(address _feeRecipient) external onlyOwner {
+        require(_feeRecipient != address(0), "can't be 0 address");
+        feeRecipient = _feeRecipient;
     }
-    
-    function types() external view returns(string[] memory) {
-        return _types;
-    }
-
-    function baseURI() external view returns(string memory) {
-        return _baseURI;
-    }
-
-    function token() external view returns(address) {
-        return address(_ghero);
-    }
-
 }
